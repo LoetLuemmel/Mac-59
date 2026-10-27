@@ -31,6 +31,7 @@ INHALT
   Mars Lander Anleitung      Spiel aus dem Modul
   Mondlandung Anleitung      Spiel vom TI-57
   Kurs ... .u59              fünf Karten zum Kurs
+  Mondlandung ... .u59       zwei Karten zum Spiel
 Die Anleitungen müssen neben dem Programm liegen; im
 Programm stehen sie im Menü Modul.
 
