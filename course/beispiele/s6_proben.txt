@@ -1,0 +1,14 @@
+LEKTION 699 Proben 6.1
+SCHRITT STO Ind 01: Zähler springt auf 002
+  LOESUNG CLR 2nd CE LRN STO 2nd y^x 0 1
+  ERWARTE anzeige "002 00"
+SCHRITT BST BST zeigt 000 72
+  LOESUNG BST BST
+  ERWARTE anzeige "000 72"
+SCHRITT Codes 2nd sin, 2nd pi, 2nd Fix
+  LOESUNG LRN CLR 2nd CE LRN 2nd x2 2nd 3 2nd ( 2 LRN
+  ERWARTE programm 0 38 89 58 2
+SCHRITT Probe 43 05 85 73 05 95
+  LOESUNG CLR 2nd CE LRN RCL 0 5 + RCL 2nd y^x 0 5 = R/S LRN CLR 3 STO 0 5 7 STO 0 3 RST R/S
+  ERWARTE programm 0 43 5 85 73 5 95 91
+  ERWARTE wert 10

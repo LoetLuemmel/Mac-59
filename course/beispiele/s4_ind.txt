@@ -1,0 +1,13 @@
+LEKTION 402 Indirekte Adressierung
+SCHRITT A legt jede Eingabe in den nächsten Speicher ab 10
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 2nd y^x 0 0 1 SUM 0 0 R/S LRN
+  ERWARTE programm 0 76 11
+SCHRITT Zeiger auf 10, dann 7 A 8 A 9 A
+  LOESUNG 1 0 STO 0 0 7 A 8 A 9 A
+  ERWARTE register 10 7
+  ERWARTE register 11 8
+  ERWARTE register 12 9
+  ERWARTE register 0 13
+PROBE
+  RCL 2nd y^x 0 0 -> 0
+  2 STO 0 0 RCL 2nd y^x 0 0 -> 0

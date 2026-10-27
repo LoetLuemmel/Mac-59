@@ -1,0 +1,13 @@
+LEKTION 102 Punkt vor Strich
+SCHRITT 2 + 3 x 4 = ergibt 14
+  ERWARTE wert 14
+  LOESUNG CLR 2 + 3 x 4 =
+SCHRITT ( 2 + 3 ) x 4 = ergibt 20
+  ERWARTE wert 20
+  LOESUNG CLR ( 2 + 3 ) x 4 =
+SCHRITT 2 y^x 3 + 1 = ergibt 9: Potenz vor Punkt vor Strich
+  ERWARTE wert 9
+  LOESUNG CLR 2 y^x 3 + 1 =
+SCHRITT 1 + 2 x 3 y^x 2 = ergibt 19
+  ERWARTE wert 19
+  LOESUNG CLR 1 + 2 x 3 y^x 2 =

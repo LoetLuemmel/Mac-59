@@ -1,0 +1,8 @@
+LEKTION 302 Entscheiden mit x>=t
+SCHRITT Betrag ohne die Betragstaste
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 0 1 0 x<>t RCL 0 1 2nd 4 B +/- 2nd SBR B R/S LRN
+  ERWARTE programm 0 76 11 42 1 0 32 43 1 77 12 94 76 12 91
+PROBE
+  5 +/- A -> 5
+  7 A -> 7
+  0 A -> 0

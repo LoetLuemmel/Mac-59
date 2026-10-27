@@ -1,0 +1,33 @@
+# Mondlandung - Paul Novaes' TI-57 "Lunar Lander" (HP Museum forum, thread "TI-57 Lunar Lander ?", 2022; RCL-57
+# sample samplesLib/lander.r57, github.com/n3times/rcl57), itself after an older program in the French magazine
+# L'Ordinateur de Poche (shown there by Didier Lachieze, 2019; its author not yet known), carried over to the
+# TI-59 key for key where the machines agree.
+# Keystrokes as typed in LRN mode, one program step or key group per line; '#' starts a comment.
+# Registers: 01 velocity (ft/s, + = down), 02 altitude (ft), 03 fuel (gal), 04 burn, 05 scratch, 00 counter.
+# A: new game (100 ft/s, 2500 ft, 100 gal). RST R/S: show the state again. n R/S: burn n gal/s for 4 s.
+
+RCL 0 3   INV 2nd (   2nd GTO            # 000 fuel, as an integer
+0 x<>t                                       # t = 0
+RCL 0 2 / 4 INV 2nd lnx =   STO 0 5          # altitude / 10^4
+RCL 0 1   2nd 4 2nd x2                       # velocity >= 0: Lbl sin
+RCL 0 5 +/- STO 0 5                          # descending upward: the sign of v
+2nd SBR 2nd x2                               # Lbl sin
+RCL 0 5 + RCL 0 1 =   2nd ( 4   R/S          # display velocity.altitude, Fix 4, wait for the burn
+STO 0 4   x<>t   RCL 0 3   2nd 4 2nd sqrt    # fuel >= burn: Lbl cos
+STO 0 4                                      # otherwise burn what is left
+2nd SBR 2nd sqrt                             # Lbl cos
+RCL 0 4   INV SUM 0 3                        # fuel -= burn
+4 STO 0 0                                    # four seconds
+2nd SBR 2nd 1/x                              # Lbl tan: one second
+RCL 0 1   INV SUM 0 2                        # altitude -= velocity
+5 SUM 0 1                                    # gravity 5 ft/s^2
+RCL 0 4   INV SUM 0 1                        # thrust
+0 x<>t   RCL 0 2   INV 2nd 4 lnx             # altitude < 0: crashed (Lbl lnx)
+6 x<>t   RCL 0 1 2nd / + RCL 0 2 =   INV 2nd 4 CE   # |v| + altitude < 6: landed (Lbl CE)
+2nd 0 0 2nd 1/x                              # Dsz 0: next second
+GTO 0 0 0                                    # four seconds done: show the state
+2nd SBR lnx   RCL 0 2   GTO 2nd E            # crashed: the altitude, blinking (no Lbl E')
+2nd SBR CE    GTO 2nd E                      # landed: |v| + altitude, blinking
+2nd SBR A                                    # A: new game
+1 0 0 STO 0 1   2 5 0 0 STO 0 2   1 0 0 STO 0 3
+GTO 0 0 0

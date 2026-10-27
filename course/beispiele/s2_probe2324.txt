@@ -1,0 +1,26 @@
+LEKTION 234 Proben 2.3 und 2.4
+SCHRITT A' anlegen und mit 2nd A starten
+  LOESUNG CLR 2nd CE LRN 2nd SBR 2nd A / 1 . 6 0 9 3 4 4 = R/S LRN CLR 1 6 0 9 . 3 4 4 2nd A
+  ERWARTE wert 1000
+SCHRITT D und E
+  LOESUNG CLR 2nd CE LRN 2nd SBR D x2 x 2nd 3 = R/S 2nd SBR E x 2 x 2nd 3 = R/S LRN CLR 1 D
+  ERWARTE wert 3.141592654
+SCHRITT E mit r=1
+  LOESUNG CLR 1 E
+  ERWARTE wert 6.283185307
+SCHRITT 2.4 Ausgangsprogramm, dann SST zeigt 001 03
+  LOESUNG CLR 2nd CE LRN x 3 + 3 = R/S LRN RST LRN SST
+  ERWARTE anzeige "001 03"
+SCHRITT überschreiben mit 2, GTO 002 LRN zeigt 002 85
+  LOESUNG 2 LRN GTO 0 0 2 LRN
+  ERWARTE anzeige "002 85"
+SCHRITT 2nd Ins zeigt 002 00
+  LOESUNG 2nd SST
+  ERWARTE anzeige "002 00"
+SCHRITT x2 tippen, LRN, dann löschen
+  LOESUNG x2 LRN GTO 0 0 2 LRN 2nd BST LRN RST 4 R/S
+  ERWARTE wert 11
+SCHRITT Probe 2.4
+  LOESUNG CLR 2nd CE LRN 2nd SBR A x2 + 1 = R/S LRN GTO 0 0 5 LRN 2nd SST 2nd SST x 2 LRN CLR 3 A
+  ERWARTE wert 11
+  ERWARTE programm 0 76 11 33 85 1 65 2 95 91

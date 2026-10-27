@@ -1,0 +1,10 @@
+LEKTION 397 Flags 2
+SCHRITT INV If flg im Listing
+  LOESUNG CLR 2nd CE LRN INV 2nd 1 1 A LRN
+  ERWARTE programm 0 22 87 1 11
+SCHRITT Umschalter E: gesetzt -> löschen, sonst setzen
+  LOESUNG CLR 2nd CE LRN 2nd SBR C 2nd 1 1 D 0 R/S 2nd SBR D 1 R/S 2nd SBR E 2nd 1 1 B 2nd RST 1 R/S 2nd SBR B INV 2nd RST 1 R/S LRN INV 2nd RST 1 E C
+  ERWARTE wert 1
+SCHRITT noch einmal E C
+  LOESUNG E C
+  ERWARTE wert 0

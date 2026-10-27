@@ -1,0 +1,21 @@
+ROM-DATEIEN HIER ABLEGEN
+In diesen Ordner gehören die ROM-Dateien des TI-59. Mac-59 bringt sie nicht mit: Sie sind Firmware von Texas Instruments. Ohne sie rechnet Mac-59 nicht.
+
+WOHER
+Das Projekt Calc-U-59 von Martin Erzberger stellt sie bereit, aus Originalchips ausgelesen vom Datamath Calculator Museum:
+   github.com/tinue/Calc-U-59, Ordner roms
+
+WELCHE
+Aus roms diese fünf Dateien:
+   TMC0582.txt
+   TMC0583.txt
+   TMC0571B.txt
+   TMC0582-CONST-K.txt
+   TMC0583-CONST-K.txt
+Für das Modul Leisure Library mit Mars Lander zusätzlich aus roms, Ordner solid-state:
+   TMC0547.txt
+Die Namen genau so lassen. Dann Mac-59 neu starten. Fehlt nur das Modul, rechnet Mac-59, und Modul > Mars Lander bleibt grau. Diese Datei hier darf im Ordner bleiben.
+
+URHEBERRECHT
+Die ROM-Dateien sind Firmware von Texas Instruments und urheberrechtlich geschützt. Sie gehören nicht zu Mac-59 und stehen nicht unter dessen Lizenz; auch Calc-U-59 räumt an ihnen keine Rechte ein. Wer sie lädt und verwendet, tut das in eigener Verantwortung.
+TI-59 und Texas Instruments sind Marken von Texas Instruments Incorporated. Mac-59 steht in keiner Verbindung zu Texas Instruments und ist von TI weder genehmigt noch unterstützt.

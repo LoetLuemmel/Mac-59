@@ -1,0 +1,24 @@
+	// Colours, matched to the photograph.
+static const RGBColor kCase    = { 0x1600, 0x1400, 0x1200 };	/* body				*/
+static const RGBColor kGlass   = { 0x2C00, 0x2600, 0x2200 };	/* display window	*/
+static const RGBColor kLedBg   = { 0x1200, 0x0A00, 0x0800 };	/* behind the LEDs	*/
+static const RGBColor kRed     = { 0xFFFF, 0x2000, 0x1800 };	/* LED				*/
+static const RGBColor kCard    = { 0x1C00, 0x2A00, 0x4E00 };	/* card strip		*/
+static const RGBColor kCardLn  = { 0x5800, 0x6800, 0xA000 };
+static const RGBColor kCardTx  = { 0xB800, 0xC000, 0xD800 };
+static const RGBColor kPanel   = { 0x1E00, 0x1C00, 0x1A00 };	/* key panel		*/
+static const RGBColor kSilver  = { 0xA800, 0xA800, 0xA400 };	/* its frame		*/
+static const RGBColor kLabel   = { 0xD800, 0xD800, 0xD000 };	/* 2nd labels		*/
+static const RGBColor kDarkKey = { 0x2E00, 0x2A00, 0x2600 };
+static const RGBColor kDarkTx  = { 0xE000, 0xDC00, 0xD400 };
+static const RGBColor kLightKy = { 0xD800, 0xD400, 0xCA00 };
+static const RGBColor kOrange  = { 0xF000, 0xA800, 0x3000 };
+static const RGBColor kSecondK = { 0xC800, 0xC600, 0x8A00 };	/* 2nd: pale olive	*/
+static const RGBColor kSecondOn = { 0xFFFF, 0xE800, 0x3000 };	/* 2nd waiting: lit yellow */
+static const RGBColor kSecondT = { 0x3A00, 0x3600, 0x2000 };
+static const RGBColor kHiLite  = { 0x6A00, 0x6600, 0x6000 };
+static const RGBColor kShadow  = { 0x0800, 0x0600, 0x0400 };
+static const RGBColor kPaper   = { 0xFFFF, 0xFFFF, 0xFFFF };	/* printer strip	*/
+static const RGBColor kWhiteC  = { 0xFFFF, 0xFFFF, 0xFFFF };
+static const RGBColor kBlackC  = { 0x0000, 0x0000, 0x0000 };
+

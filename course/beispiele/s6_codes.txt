@@ -1,0 +1,4 @@
+LEKTION 601 Verschmolzene Codes
+SCHRITT STO Ind, RCL Ind, SUM Ind, Prd Ind, Exc Ind, GTO Ind, SBR Ind, INV SBR
+  LOESUNG CLR 2nd CE LRN STO 2nd y^x 0 1 RCL 2nd y^x 0 1 SUM 2nd y^x 0 1 2nd SUM 2nd y^x 0 1 2nd RCL 2nd y^x 0 1 GTO 2nd y^x 0 1 SBR 2nd y^x 0 1 INV SBR 2nd 9 2nd y^x 0 1 LRN
+  ERWARTE programm 0 72

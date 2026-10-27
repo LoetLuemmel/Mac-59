@@ -1,0 +1,2 @@
+# s3_summe: Beispielprogramm des TI-59-Kurses (aus course/beispiele/s3_summe.txt)
+2nd SBR A STO 0 0 0 STO 0 1 2nd SBR C RCL 0 0 SUM 0 1 2nd 0 0 C RCL 0 1 R/S

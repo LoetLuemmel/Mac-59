@@ -1,0 +1,49 @@
+# Lektion 2 des TI-59-Kurses. Format: port/Course.h. Geprueft mit: build/coursecheck course/lektion2.txt
+LEKTION 2 Das erste Programm
+ZIEL Eine Rechnung als Programm aufzeichnen und abspielen.
+TEXT
+Ein Programm ist eine aufgezeichnete Rechnung. Im LRN-Modus merkt sich der TI-59 jede Taste
+als Programmschritt, statt sie auszuführen. Die Anzeige zeigt dann zwei Zahlen: links den
+nächsten freien Schritt, rechts den Code der Taste, die dort steht.
+
+TEIL Vormachen
+SCHRITT Drücke LRN. Die Anzeige zeigt 000 00: Schritt 000 ist leer.
+  ERWARTE modus LRN
+  ERWARTE anzeige "000 00"
+  TIPP LRN steht links in der dritten Tastenreihe.
+  LOESUNG LRN
+SCHRITT Tippe x², +, 1, = und R/S. Nach jeder Taste rückt der Schrittzähler weiter.
+  ERWARTE schritt 5
+  ERWARTE programm 0 33 85 1 95 91
+  TIPP Die Anzeige zeigt nach jeder Taste den nächsten freien Schritt.
+  FEHLER programm 0 23 : Das ist lnx - x² ist die Taste unter LRN, zwei weiter rechts.
+  FALSCH lnx
+  LOESUNG x2 + 1 = R/S
+SCHRITT Verlasse den LRN-Modus mit LRN und setze das Programm mit RST an den Anfang.
+  ERWARTE modus HALT
+  ERWARTE zeiger 0
+  TIPP Erst LRN, dann RST.
+  FEHLER modus LRN : Der TI-59 ist noch im LRN-Modus - RST würde als Schritt aufgezeichnet.
+  FALSCH RST
+  LOESUNG LRN RST
+SCHRITT Starte das Programm mit 3 R/S. Es rechnet 3² + 1 = 10.
+  ERWARTE wert 10
+  TIPP Erst die Zahl, dann R/S: das Programm rechnet mit der Zahl in der Anzeige.
+  LOESUNG 3 R/S
+
+TEIL Ueben
+AUFGABE Schreibe das Programm neu, so dass es x² + 2 rechnet: RST, LRN, die Tasten, LRN.
+  ERWARTE programm 0 33 85 2 95 91
+  ERWARTE modus HALT
+  TIPP Im LRN-Modus überschreibt jede Taste den Schritt, auf dem der Zähler steht.
+  LOESUNG RST LRN x2 + 2 = R/S LRN RST
+
+TEIL Probe
+AUFGABE Programmiere 2x + 3: Zahl eingeben, R/S, das Programm zeigt das Doppelte plus 3.
+  ERWARTE programm 0 65 2 85 3 95 91
+  ERWARTE modus HALT
+  LOESUNG RST LRN x 2 + 3 = R/S LRN RST
+PROBE
+  RST 4 R/S -> 11
+  RST 0 R/S -> 3
+  RST 2 . 5 R/S -> 8

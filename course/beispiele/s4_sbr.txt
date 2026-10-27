@@ -1,0 +1,8 @@
+LEKTION 401 Unterprogramme
+SCHRITT Fakultät: D multipliziert Speicher 02 mit der Anzeige
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 0 1 1 STO 0 2 2nd SBR C RCL 0 1 SBR D 2nd 0 1 C RCL 0 2 R/S 2nd SBR D 2nd SUM 0 2 INV SBR LRN
+  ERWARTE programm 0 76 11
+PROBE
+  5 A -> 120
+  1 0 A -> 3628800
+  1 A -> 1

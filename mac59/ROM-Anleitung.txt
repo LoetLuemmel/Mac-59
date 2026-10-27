@@ -1,0 +1,21 @@
+ROM FEHLT
+Mac-59 bildet den TI-59 nach, bringt aber dessen Firmware von Texas Instruments nicht mit. Ohne sie rechnet Mac-59 nicht.
+
+WOHER
+Das Projekt Calc-U-59 von Martin Erzberger stellt die ROM-Dateien des TI-59 bereit, aus Originalchips ausgelesen vom Datamath Calculator Museum:
+   github.com/tinue/Calc-U-59, Ordner roms
+
+SO GEHT ES
+Diese fünf Dateien aus roms in den Ordner ROM kopieren, der neben dem Programm liegt (fehlt er, einen Ordner mit dem Namen ROM anlegen):
+   TMC0582.txt
+   TMC0583.txt
+   TMC0571B.txt
+   TMC0582-CONST-K.txt
+   TMC0583-CONST-K.txt
+Für das Modul Leisure Library mit Mars Lander zusätzlich aus roms, Ordner solid-state:
+   TMC0547.txt
+Dann Mac-59 neu starten. Fehlt nur das Modul, rechnet Mac-59, und Modul > Mars Lander bleibt grau.
+
+URHEBERRECHT
+Die ROM-Dateien sind Firmware von Texas Instruments und urheberrechtlich geschützt. Sie gehören nicht zu diesem Programm und stehen nicht unter dessen Lizenz; auch Calc-U-59 räumt an ihnen keine Rechte ein. Wer sie lädt und verwendet, tut das in eigener Verantwortung.
+TI-59 und Texas Instruments sind Marken von Texas Instruments Incorporated. Mac-59 steht in keiner Verbindung zu Texas Instruments und ist von TI weder genehmigt noch unterstützt.

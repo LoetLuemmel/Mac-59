@@ -1,0 +1,35 @@
+MARS LANDER
+Leisure Library, Programm 14 (LE-14)
+
+ZIEL
+Die Landefähre weich auf dem Mars aufsetzen und dabei möglichst wenig Treibstoff verbrauchen. Viel Erfolg!
+
+START
+Modul > Mars Lander wählt das Programm (2nd Pgm 14) und beschriftet den Kartenstreifen über A bis E. Dann E drücken. Die Anzeige zeigt Geschwindigkeit und Höhe in einer Zahl:
+   -487.2603  =  487 abwärts, Höhe 2603
+Treibstoff zu Beginn: 630.
+
+TASTEN
+   Zahl, dann 
+   A   					so viel Treibstoff brennen (0 bis 75; mehr zählt nicht)
+   B              Resttreibstoff anzeigen
+   C              Geschwindigkeit.Höhe noch einmal anzeigen
+   E              neuer Anflug
+Nach A rechnet der TI ein paar Sekunden (C in der Anzeige), dann steht die neue Geschwindigkeit.Höhe da. Der Drucker protokolliert jeden Zug: die Brennmenge und das Ergebnis.
+
+PHYSIK
+Die Schwerkraft zieht pro Zug 13 nach unten. Eine Einheit Treibstoff bremst anfangs um etwa 1, gegen Ende um bis zu 1,4 - die Fähre wird leichter. Die Höhe sinkt pro Zug um den Mittelwert der alten und neuen Geschwindigkeit.
+
+ENDE
+Beim Aufsetzen zeigt die Anzeige die Aufsetzgeschwindigkeit, zum Beispiel -1. Ein Absturz blinkt mit Fragezeichen, zum Beispiel -552. ?
+
+ERPROBTE LANDUNG
+Sofort bremsen und die Brennmenge Zug für Zug senken:
+   59 56 54 52 50 48 46 44 41 39 35 24 0 0 17
+(jeweils Zahl, dann A). Ergebnis: Aufsetzen mit 1, 65 Treibstoff übrig. Wer später bremst, schafft es mit höchstens 75 pro Zug nicht mehr.
+
+LISTING
+2nd Op 09 kopiert das Modulprogramm in den Programmspeicher. Dann RST und 2nd List: der Drucker listet die 197 Schritte (000 bis 196). R/S beendet die Liste; Drucker > Papier sichern legt sie als SimpleText-Dokument ab.
+
+HERKUNFT
+Die Regeln sind durch Ausprobieren am emulierten TI-59 ermittelt; TIs gedruckte Anleitung zum Leisure-Library-Modul lag leider nicht vor.

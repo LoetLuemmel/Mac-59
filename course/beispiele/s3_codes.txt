@@ -1,0 +1,10 @@
+LEKTION 398 Codes Stufe 3
+SCHRITT x=t und INV x>=t im Listing
+  LOESUNG CLR 2nd CE LRN 2nd 7 A INV 2nd 4 B INV 2nd 7 C LRN
+  ERWARTE programm 0 67 11 22 77 12 22 67 13
+SCHRITT Minimum
+  LOESUNG CLR 2nd CE LRN 2nd SBR A x<>t R/S 2nd SBR B INV 2nd 4 C x<>t 2nd SBR C R/S LRN CLR 3 A 7 B
+  ERWARTE wert 3
+SCHRITT Minimum andersherum
+  LOESUNG CLR 9 A 4 B
+  ERWARTE wert 4

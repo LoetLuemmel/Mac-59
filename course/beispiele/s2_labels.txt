@@ -1,0 +1,8 @@
+LEKTION 203 Eigene Funktionstasten
+SCHRITT A: Fahrenheit in Celsius, B: Celsius in Fahrenheit
+  ERWARTE programm 0 76 11 75 3 2 95 65 5 55 9 95 91 76 12 65 9 55 5 85 3 2 95 91
+  LOESUNG CLR 2nd CE LRN 2nd SBR A - 3 2 = x 5 / 9 = R/S 2nd SBR B x 9 / 5 + 3 2 = R/S LRN
+PROBE
+  2 1 2 A -> 100
+  1 0 0 B -> 212
+  4 0 +/- A -> -40

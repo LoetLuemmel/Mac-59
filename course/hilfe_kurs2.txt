@@ -1,0 +1,59 @@
+LEKTION 902 Tastenfolgen der Hilfe "Programmierkurs Anleitung", Stufe 3-6 (mac59/Kurs-Anleitung.txt)
+SCHRITT 3.1 GTO 008
+  LOESUNG CLR 2nd CE LRN x 2 GTO 0 0 8 x 1 0 = R/S LRN
+  ERWARTE programm 0 65 2 61 0 8 65 1 0 95 91
+SCHRITT 3.1 RST 5 R/S
+  LOESUNG RST 5 R/S
+  ERWARTE wert 10
+SCHRITT 3.2 Betrag mit x>=t
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 0 1 0 x<>t RCL 0 1 2nd 4 B +/- 2nd SBR B R/S LRN CLR 5 +/- A
+  ERWARTE wert 5
+SCHRITT 3.2 7 A
+  LOESUNG CLR 7 A
+  ERWARTE wert 7
+SCHRITT 3.3 Summe 1 bis n mit Dsz
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 0 0 0 STO 0 1 2nd SBR C RCL 0 0 SUM 0 1 2nd 0 0 C RCL 0 1 R/S LRN CLR 1 0 A
+  ERWARTE wert 55
+SCHRITT 3.3 100 A
+  LOESUNG CLR 1 0 0 A
+  ERWARTE wert 5050
+SCHRITT 3.4 Flags
+  LOESUNG CLR 2nd CE LRN 2nd SBR A 2nd RST 1 R/S 2nd SBR B INV 2nd RST 1 R/S 2nd SBR C 2nd 1 1 D 0 R/S 2nd SBR D 1 R/S LRN CLR A C
+  ERWARTE wert 1
+SCHRITT 3.4 B C
+  LOESUNG B C
+  ERWARTE wert 0
+SCHRITT 4.1 Fakultaet mit Unterprogramm D
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 0 1 1 STO 0 2 2nd SBR C RCL 0 1 SBR D 2nd 0 1 C RCL 0 2 R/S 2nd SBR D 2nd SUM 0 2 INV SBR LRN CLR 5 A
+  ERWARTE wert 120
+SCHRITT 4.1 10 A
+  LOESUNG CLR 1 0 A
+  ERWARTE anzeige "3628800."
+SCHRITT 4.2 indirekt ablegen
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 2nd y^x 0 0 1 SUM 0 0 R/S LRN CLR 1 0 STO 0 0 7 A 8 A 9 A
+  ERWARTE register 10 7
+  ERWARTE register 11 8
+  ERWARTE register 12 9
+  ERWARTE register 0 13
+SCHRITT 4.2 RCL Ind 00 mit Zeiger 11
+  LOESUNG 1 1 STO 0 0 RCL 2nd y^x 0 0
+  ERWARTE wert 8
+SCHRITT 4.3 mit Fix 2 geht Op 17 schief
+  LOESUNG CLR 2nd ( 2 3 2nd 9 1 7
+  ERWARTE anzeige "159.99"
+SCHRITT 4.3 INV 2nd Fix, dann Op 16
+  LOESUNG INV 2nd ( CLR 6 2nd 9 1 7 CLR 2nd 9 1 6
+  ERWARTE wert 479.59
+SCHRITT 4.3 3 Op 17
+  LOESUNG CLR 3 2nd 9 1 7
+  ERWARTE wert 719.29
+SCHRITT 4.3 6 Op 17
+  LOESUNG CLR 6 2nd 9 1 7
+  ERWARTE wert 479.59
+SCHRITT 6.1 Codes
+  LOESUNG CLR 2nd CE LRN RCL 0 5 + RCL 2nd y^x 0 5 = R/S LRN CLR 3 STO 0 5 7 STO 0 3 RST R/S
+  ERWARTE programm 0 43 5 85 73 5 95 91
+  ERWARTE wert 10
+SCHRITT 6.1 2nd sin, 2nd pi, 2nd Fix 2
+  LOESUNG CLR 2nd CE LRN 2nd x2 2nd 3 2nd ( 2 LRN
+  ERWARTE programm 0 38 89 58 2

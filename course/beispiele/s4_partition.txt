@@ -1,0 +1,13 @@
+LEKTION 403 Partition
+SCHRITT Op 16 zeigt die Aufteilung
+  LOESUNG CLR 2nd 9 1 6
+  ERWARTE wert 479.59
+SCHRITT 3 Op 17: 720 Schritte, 30 Speicher
+  LOESUNG CLR 3 2nd 9 1 7
+  ERWARTE wert 719.29
+SCHRITT 6 Op 17: zurück auf 480 Schritte, 60 Speicher
+  LOESUNG CLR 6 2nd 9 1 7
+  ERWARTE wert 479.59
+SCHRITT 10 Op 17: 160 Schritte, 100 Speicher
+  LOESUNG CLR 1 0 2nd 9 1 7
+  ERWARTE wert 159.99

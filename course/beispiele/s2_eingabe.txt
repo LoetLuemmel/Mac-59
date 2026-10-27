@@ -1,0 +1,8 @@
+LEKTION 202 Fahrenheit in Celsius
+SCHRITT Programm (x - 32) x 5 / 9 mit Fix 2
+  ERWARTE programm 0 75 3 2 95 65 5 55 9 95 58 2 91
+  LOESUNG CLR 2nd CE LRN - 3 2 = x 5 / 9 = 2nd ( 2 R/S LRN RST
+PROBE
+  RST 2 1 2 R/S -> 100
+  RST 3 2 R/S -> 0
+  RST 9 8 . 6 R/S -> 37

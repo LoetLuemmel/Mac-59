@@ -1,0 +1,15 @@
+LEKTION 204 Programme bearbeiten
+SCHRITT Programm x 3 + 3 = R/S eintippen
+  LOESUNG CLR 2nd CE LRN x 3 + 3 = R/S LRN
+  ERWARTE programm 0 65 3 85 3 95 91
+SCHRITT Schritt 001 korrigieren: RST, LRN, SST, 2, LRN
+  LOESUNG RST LRN SST 2 LRN
+  ERWARTE programm 0 65 2 85 3 95 91
+SCHRITT Vor Schritt 002 eine Taste einfügen: GTO 002, LRN, 2nd Ins, x2, LRN
+  LOESUNG GTO 0 0 2 LRN 2nd SST x2 LRN
+  ERWARTE programm 0 65 2 33 85 3 95 91
+SCHRITT Schritt 002 wieder löschen: GTO 002, LRN, 2nd Del, LRN
+  LOESUNG GTO 0 0 2 LRN 2nd BST LRN
+  ERWARTE programm 0 65 2 85 3 95 91
+PROBE
+  RST 4 R/S -> 11

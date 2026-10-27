@@ -1,0 +1,10 @@
+LEKTION 111 Probe 1.1
+SCHRITT 10 hoch 0,5
+  LOESUNG CLR . 5 INV 2nd lnx
+  ERWARTE anzeige "3.16227766"
+SCHRITT Wurzel 10
+  LOESUNG CLR 1 0 sqrt
+  ERWARTE anzeige "3.16227766"
+SCHRITT ln 10 und zurück
+  LOESUNG CLR 1 0 lnx INV lnx
+  ERWARTE wert 10

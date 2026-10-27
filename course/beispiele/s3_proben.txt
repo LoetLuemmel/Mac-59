@@ -1,0 +1,31 @@
+LEKTION 399 Proben Stufe 3
+SCHRITT 3.1 GTO Label überspringt + 100
+  LOESUNG CLR 2nd CE LRN 2nd SBR A x 2 GTO B + 1 0 0 2nd SBR B = R/S LRN CLR 5 A
+  ERWARTE wert 10
+SCHRITT 3.2 Maximum: a A b B
+  LOESUNG CLR 2nd CE LRN 2nd SBR A x<>t R/S 2nd SBR B 2nd 4 C x<>t 2nd SBR C R/S LRN CLR 3 A 7 B
+  ERWARTE wert 7
+SCHRITT 3.2 Maximum andersherum
+  LOESUNG CLR 9 A 4 B
+  ERWARTE wert 9
+SCHRITT 3.2 Vorzeichen -5
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 0 1 0 x<>t RCL 0 1 2nd 7 D 2nd 4 E 1 +/- R/S 2nd SBR D 0 R/S 2nd SBR E 1 R/S LRN CLR 5 +/- A
+  ERWARTE wert -1
+SCHRITT 3.2 Vorzeichen 0
+  LOESUNG CLR 0 A
+  ERWARTE wert 0
+SCHRITT 3.2 Vorzeichen 3
+  LOESUNG CLR 3 A
+  ERWARTE wert 1
+SCHRITT 3.3 Fakultät mit Dsz
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 0 0 1 STO 0 1 2nd SBR B RCL 0 0 2nd SUM 0 1 2nd 0 0 B RCL 0 1 R/S LRN CLR 5 A
+  ERWARTE wert 120
+SCHRITT 3.3 Zweierpotenz
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 0 0 1 STO 0 1 2nd SBR B 2 2nd SUM 0 1 2nd 0 0 B RCL 0 1 R/S LRN CLR 1 0 A
+  ERWARTE wert 1024
+SCHRITT 3.4 Flag 3 gesetzt: x²
+  LOESUNG CLR 2nd CE LRN 2nd SBR A 2nd 1 3 B R/S 2nd SBR B x2 R/S LRN CLR 2nd RST 3 4 A
+  ERWARTE wert 16
+SCHRITT 3.4 Flag 3 gelöscht: x
+  LOESUNG CLR INV 2nd RST 3 4 A
+  ERWARTE wert 4

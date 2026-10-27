@@ -1,0 +1,4 @@
+roms/
+build/
+*.o
+.DS_Store

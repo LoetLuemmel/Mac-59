@@ -1,0 +1,7 @@
+LEKTION 956 2nd zweimal hebt 2nd auf (die Leuchte der 2nd-Taste in mac59 folgt dem)
+SCHRITT 2nd 2nd x2 im Lernmodus
+  LOESUNG CLR 2nd CE LRN 2nd 2nd x2 LRN
+  ERWARTE programm 000 33
+SCHRITT 2nd 2nd x2 direkt (4 -> 16 oder sin 4)
+  LOESUNG CLR 4 2nd 2nd x2
+  ERWARTE anzeige "16."

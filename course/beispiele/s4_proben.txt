@@ -1,0 +1,10 @@
+LEKTION 499 Proben Stufe 4
+SCHRITT 4.1 Unterprogramm D quadriert, A addiert 1
+  LOESUNG CLR 2nd CE LRN 2nd SBR A SBR D + 1 = R/S 2nd SBR D x2 INV SBR LRN CLR 3 A
+  ERWARTE wert 10
+SCHRITT 4.1 Unterprogramm zweimal: a² + b² mit A (a) und B (b)
+  LOESUNG CLR 2nd CE LRN 2nd SBR A SBR D STO 0 1 R/S 2nd SBR B SBR D + RCL 0 1 = R/S 2nd SBR D x2 INV SBR LRN CLR 3 A 4 B
+  ERWARTE wert 25
+SCHRITT 4.2 Werte ablegen und indirekt aufsummieren
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 2nd y^x 0 0 1 SUM 0 0 R/S 2nd SBR C 0 STO 0 2 1 0 STO 0 0 3 STO 0 3 2nd SBR D RCL 2nd y^x 0 0 SUM 0 2 1 SUM 0 0 2nd 0 3 D RCL 0 2 R/S LRN CLR 1 0 STO 0 0 7 A 8 A 9 A C
+  ERWARTE wert 24

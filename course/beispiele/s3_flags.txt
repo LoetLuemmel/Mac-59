@@ -1,0 +1,7 @@
+LEKTION 304 Flags
+SCHRITT A setzt Flag 1, B löscht es, C fragt es ab
+  LOESUNG CLR 2nd CE LRN 2nd SBR A 2nd RST 1 R/S 2nd SBR B INV 2nd RST 1 R/S 2nd SBR C 2nd 1 1 D 0 R/S 2nd SBR D 1 R/S LRN
+  ERWARTE programm 0 76 11 86 1 91
+PROBE
+  A C -> 1
+  B C -> 0

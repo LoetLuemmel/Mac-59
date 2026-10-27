@@ -1,0 +1,151 @@
+PROGRAMMIERKURS
+Den TI-59 Schritt für Schritt programmieren, mit Mac-59
+
+SO IST DER KURS AUFGEBAUT
+Sechs Stufen, 20 Lektionen. Jede Lektion bringt ein neues Konzept und ein Beispiel zum Nachtippen; die Stufen bauen aufeinander auf. Wer Stufe 1 und 2 kennt, kann schon nützliche Programme schreiben. Jede Tastenfolge hier ist auf dem emulierten TI-59 geprüft.
+Die ausführlichen Lektionen mit Übungen, Proben und Animationen stehen im Netz: td5.390er.de, Rubrik TI-59, Programmierkurs.
+
+SCHREIBWEISE
+Tasten stehen so da, wie sie auf dem Rechner heißen: STO, RCL, R/S. Die Zweitfunktion über einer Taste erreicht man mit 2nd, zum Beispiel 2nd Lbl (über SBR) oder 2nd log (über lnx). x ist die Maltaste; x2, x<>t und x>=t sind eigene Tasten. Speicher und Adressen werden immer zweistellig bzw. dreistellig getippt: STO 01, GTO 008. -> zeigt, was danach in der Anzeige steht.
+Karten: Wo eine Kurskarte zum Beispiel gehört, lässt sich das Programm einlesen statt eintippen: Doppelklick auf die Karte im Finder oder Mac-59 > Karte einlesen...
+
+STUFE EINS RECHNEN
+
+1.1 Tasten, 2nd und INV
+2nd ruft die Funktion über der Taste auf, INV kehrt die folgende Funktion um.
+   CLR 100 2nd log        -> 2
+   CLR 2 INV 2nd log      -> 100
+   CLR 9 √x               -> 3
+   CLR 2nd π              -> 3.141592654
+
+1.2 Punkt vor Strich und Klammern
+Der TI-59 rechnet nach den Regeln der Algebra (AOS): Potenz vor Punkt vor Strich.
+   CLR 2 + 3 x 4 =        -> 14
+   CLR ( 2 + 3 ) x 4 =    -> 20
+   CLR 2 y^x 3 + 1 =      -> 9
+
+1.3 Rechnen mit Speichern
+STO legt ab, RCL holt zurück, SUM addiert in den Speicher, 2nd Prd multipliziert hinein, 2nd Exc tauscht Anzeige und Speicher.
+   CLR 5 STO 01 3 2nd Prd 01 CLR RCL 01   -> 15
+   CLR 7 2nd Exc 01       -> 15, Speicher 01 ist jetzt 7
+   CLR 2 INV SUM 01       Speicher 01 ist jetzt 5
+
+STUFE ZWEI ERSTE PROGRAMME
+
+2.1 Das erste Programm
+LRN schaltet die Aufzeichnung ein und aus: Statt zu rechnen, merkt sich der TI die Tasten. RST setzt an den Anfang, R/S startet.
+   CLR 2nd CP LRN x 3 + 3 = R/S LRN
+   RST 4 R/S              -> 15
+Am Drucker zeigt RST 2nd List das Programm: Schritt, Tastencode, Taste.
+
+2.2 Eingabe und Ausgabe
+Das Programm hält mit R/S an, man tippt die nächste Zahl und startet weiter. 2nd Fix 2 zeigt zwei Nachkommastellen.
+   CLR 2nd CP LRN - 32 = x 5 ÷ 9 = 2nd Fix 2 R/S LRN
+   RST 212 R/S            -> 100.00
+   RST 98.6 R/S           -> 37.00
+   INV 2nd Fix            hebt die feste Stellenzahl wieder auf
+
+2.3 Eigene Funktionstasten – Beispiel: Temperatur
+2nd Lbl A legt ein Label an; die Taste A springt dorthin und startet.
+   CLR 2nd CP LRN
+   2nd Lbl A - 32 = x 5 ÷ 9 = R/S
+   2nd Lbl B x 9 ÷ 5 + 32 = R/S LRN
+   CLR 212 A              -> 100
+   CLR 100 B              -> 212
+   CLR 40 +/- A           -> -40
+Karte: Kurs Temperatur.u59
+
+2.4 Programme ansehen und korrigieren
+Im LRN-Modus zeigt die Anzeige Schritt und Tastencode. SST und BST gehen einen Schritt vor und zurück, eine Taste überschreibt den Schritt, 2nd Ins fügt einen leeren ein, 2nd Del löscht.
+   CLR 2nd CP LRN x 3 + 3 = R/S LRN
+   RST LRN SST            -> 001 03
+   2 LRN GTO 002 LRN 2nd Ins   -> 002 00
+   x2 LRN GTO 002 LRN 2nd Del LRN RST 4 R/S   -> 11
+RST 2nd Op 08 druckt nur die Labels mit ihren Adressen. Ein Listing läuft bis zum Ende des Programmspeichers; Drucker > Listing am Programmende anhalten hält es kurz nach dem Programm an.
+
+STUFE DREI ABLAUFSTEUERUNG
+
+3.1 Sprünge
+GTO mit einer Adresse springt dorthin, GTO mit einem Label zum Label.
+   CLR 2nd CP LRN x 2 GTO 008 x 10 = R/S LRN
+   RST 5 R/S              -> 10
+Der Sprung überspringt "x 10".
+
+3.2 Entscheiden – Beispiel: Betrag
+2nd x>=t vergleicht die Anzeige mit dem t-Register und springt, wenn sie größer oder gleich ist; x<>t tauscht Anzeige und t.
+   CLR 2nd CP LRN 2nd Lbl A STO 01 0 x<>t RCL 01
+   2nd x>=t B +/- 2nd Lbl B R/S LRN
+   CLR 5 +/- A            -> 5
+   CLR 7 A                -> 7
+Karte: Kurs Betrag.u59
+
+3.3 Schleifen mit Dsz – Beispiel: Summe
+Dsz steht für "Decrement and Skip on Zero": herunterzählen, bei null überspringen. 2nd Dsz 00 zählt Speicher 00 herunter und springt, solange er nicht null ist; bei null läuft das Programm weiter. So wird Speicher 00 zum Schleifenzähler.
+   CLR 2nd CP LRN 2nd Lbl A STO 00 0 STO 01
+   2nd Lbl C RCL 00 SUM 01 2nd Dsz 00 C RCL 01 R/S LRN
+   CLR 10 A               -> 55
+   CLR 100 A              -> 5050
+Karte: Kurs Summe.u59
+
+3.4 Flags
+Zehn Flags (0 bis 9) merken sich ja oder nein: 2nd St flg setzt, INV 2nd St flg löscht, 2nd If flg springt, wenn gesetzt.
+   CLR 2nd CP LRN 2nd Lbl A 2nd St flg 1 R/S
+   2nd Lbl B INV 2nd St flg 1 R/S
+   2nd Lbl C 2nd If flg 1 D 0 R/S 2nd Lbl D 1 R/S LRN
+   CLR A C                -> 1
+   B C                    -> 0
+
+STUFE VIER STRUKTUR
+
+4.1 Unterprogramme – Beispiel: Fakultät
+SBR ruft ein Label als Unterprogramm auf, INV SBR kehrt zurück.
+   CLR 2nd CP LRN 2nd Lbl A STO 01 1 STO 02
+   2nd Lbl C RCL 01 SBR D 2nd Dsz 01 C RCL 02 R/S
+   2nd Lbl D 2nd Prd 02 INV SBR LRN
+   CLR 5 A                -> 120
+   CLR 10 A               -> 3628800
+Karte: Kurs Fakultaet.u59
+
+4.2 Indirekte Adressierung – Beispiel: Speicherliste
+STO 2nd Ind 00 legt in den Speicher, dessen Nummer in Speicher 00 steht.
+   CLR 2nd CP LRN 2nd Lbl A STO 2nd Ind 00 1 SUM 00 R/S LRN
+   CLR 10 STO 00 7 A 8 A 9 A
+Die Speicher 10, 11, 12 enthalten 7, 8, 9; Speicher 00 zeigt auf 13.
+   11 STO 00 RCL 2nd Ind 00   -> 8
+Karte: Kurs Indirekt.u59
+
+4.3 Speicher aufteilen und Karten
+Programmschritte und Speicher teilen sich einen Speicher: je 80 Schritte gegen 10 Speicher. 2nd Op 16 zeigt die Aufteilung, n 2nd Op 17 stellt n mal 10 Speicher ein.
+   INV 2nd Fix CLR 2nd Op 16    -> 479.59  (Schritte 000 bis 479, Speicher 00 bis 59)
+   CLR 3 2nd Op 17        -> 719.29
+   CLR 6 2nd Op 17        -> 479.59
+Vorsicht: Steht noch eine feste Stellenzahl (2nd Fix), teilt Op 17 falsch auf; vorher INV 2nd Fix.
+Karte schreiben: 1 2nd Write, dann Mac-59 > Leere Karte einschieben...; der TI schreibt Bank 1, Mac-59 fragt nach dem Namen. Lesen: Mac-59 > Karte einlesen... oder ein Doppelklick auf die Karte; die Anzeige zeigt die Banknummer.
+
+4.4 Module
+Im Schacht steckt das Modul Leisure Library mit fertigen Programmen; 2nd Pgm 14 wählt Mars Lander. Bequemer: Modul > Mars Lander, Mac-59 legt auch den Kartenstreifen mit der Belegung von A bis E darüber. Die Spielregeln stehen unter Modul > Anleitung Mars Lander.
+
+STUFE FUENF PROJEKTE
+
+5.1 Die Mondlandung
+Das Spiel des TI-57, Schritt für Schritt auf den TI-59 übertragen (126 Schritte). Karte Mondlandung.u59 einlesen, A drücken, dann je eine Brennmenge und R/S. Erprobte Landung: 0 0 0 16 30 6 9 -> 0.0000, perfekt. Alles Weitere: Modul > Anleitung Mondlandung (TI-57).
+
+5.2 Verdichten
+Mondlandung kurz.u59 spielt genau gleich mit 101 statt 126 Schritten: Op 10 liefert das Vorzeichen ohne Sprung, ein bedingter Sprung zum fehlenden Label E' beendet das Spiel, RST ersetzt GTO 000.
+
+STUFE SECHS UNTER DER HAUBE
+
+6.1 Tastencodes
+Jede Taste hat einen Code aus Zeile und Spalte: STO ist 42 (Zeile 4, Spalte 2). 2nd addiert 5 zur Spalte: 2nd sin (über x2, 33) ist 38. Einige Kombinationen werden zu einem Schritt verschmolzen: RCL 2nd Ind ist 73.
+   CLR 2nd CP LRN RCL 05 + RCL 2nd Ind 05 = R/S LRN
+Codes: 43 05 85 73 05 95 91.
+   CLR 3 STO 05 7 STO 03 RST R/S   -> 10
+
+6.2 Wo Programme und Zahlen liegen
+Programmschritte und Zahlen liegen im selben Speicher: Ein Datenspeicher fasst acht Programmschritte. Darum kosten 80 Schritte zehn Speicher (siehe 4.3); Op 17 verschiebt nur die Grenze zwischen beiden.
+
+6.3 Takt, Tastatur und Drucker
+Der Prozessor des TI-59 läuft mit 455 kHz, Mac-59 ahmt dieses Tempo nach; Mac-59 > Einstellungen... lässt ihn auf Wunsch so schnell rechnen, wie der Mac kann. Während ein Programm läuft, fragt der TI die Tastatur nur zwischendurch ab: Darum muss R/S beim echten Gerät kurz festgehalten werden. Mac-59 hält eine Taste dafür selbst 0,6 s fest, solange der TI beschäftigt ist.
+
+MARKEN
+TI-59 und Texas Instruments sind Marken von Texas Instruments Incorporated. Mac-59 steht in keiner Verbindung zu Texas Instruments und ist von TI weder genehmigt noch unterstützt.

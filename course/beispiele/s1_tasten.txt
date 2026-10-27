@@ -1,0 +1,16 @@
+LEKTION 101 Tasten, 2nd und INV
+SCHRITT 100 2nd log ergibt 2
+  ERWARTE wert 2
+  LOESUNG CLR 1 0 0 2nd lnx
+SCHRITT 2 INV 2nd log ergibt 100
+  ERWARTE wert 100
+  LOESUNG CLR 2 INV 2nd lnx
+SCHRITT 9 sqrt ergibt 3
+  ERWARTE wert 3
+  LOESUNG CLR 9 sqrt
+SCHRITT 2 1/x ergibt 0.5
+  ERWARTE wert 0.5
+  LOESUNG CLR 2 1/x
+SCHRITT pi
+  ERWARTE wert 3.141592654
+  LOESUNG CLR 2nd 3

@@ -1,0 +1,11 @@
+LEKTION 498 Debug 4.2
+SCHRITT ablegen
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 2nd y^x 0 0 1 SUM 0 0 R/S 2nd SBR C 0 STO 0 2 1 0 STO 0 0 3 STO 0 3 2nd SBR D RCL 2nd y^x 0 0 SUM 0 2 1 SUM 0 0 2nd 0 3 D RCL 0 2 R/S LRN CLR 1 0 STO 0 0 7 A 8 A 9 A
+  ERWARTE register 10 7
+  ERWARTE register 11 8
+  ERWARTE register 12 9
+SCHRITT C
+  LOESUNG C
+  ERWARTE register 2 24
+  ERWARTE register 3 0
+  ERWARTE register 0 13

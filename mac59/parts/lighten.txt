@@ -1,0 +1,14 @@
+static void LightenFor(short style, Boolean pressed, RGBColor *c)
+{
+	switch (style) {
+		case kKeyLight:		*c = kLightKy; break;
+		case kKeyOrange:	*c = kOrange;  break;
+		case kKeySecond:	*c = kSecondK; break;
+		default:			*c = kDarkKey; break;
+	}
+	if (pressed) {
+		if (style == kKeyDark) { c->red += 0x3000; c->green += 0x3000; c->blue += 0x3000; }
+		else { c->red -= 0x3000; c->green -= 0x3000; c->blue -= 0x3000; }
+	}
+}
+

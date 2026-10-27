@@ -1,0 +1,405 @@
+#include "TI59Machine.hpp"
+#include <cmath>
+#include <cstring>
+
+TI59Machine::TI59Machine(MachineVariant variant)
+    : m_variant(variant), m_cpu(m_rom, m_ram)
+{
+    if (hasConstantMemory(variant)) {
+        m_ram.setLimit(64);   // TI-58C: 60 normal regs + 4 extra (reg 60 = OS control reg)
+    } else if (!hasLargeMemory(variant)) {
+        m_ram.setLimit(60);   // TI-58: 60 regs
+    }
+    m_cpu.setMachineVariant(variant);
+    // Card switch (bit 4): pressed = card absent (normal startup state).
+    // TI-59: digit-counter slot 10, the real card-detect switch. The TI-58
+    // shares the ROM but has no reader: slot 10 stays open and a D7-KR
+    // connection vetoes the card path at 0x0459 instead (Sladký, HW guide:
+    // "Reader detection: no D7-KR connection (TI-59 mode)"). The TI-58C ROM
+    // never probes slot 7; it samples slot 10 itself (0x064D), so slot 7 is
+    // harmless there.
+    int col = cardSwitchCol();
+    m_cpu.setCardSwitchCol(static_cast<uint8_t>(col));
+    m_cpu.pressKey(4, col);
+    m_cpu.setPrinterConnected(m_printerConnected);
+}
+
+void TI59Machine::loadROM(const uint16_t* data, size_t count) {
+    m_rom.load(data, count);
+}
+
+void TI59Machine::loadLibrary(const uint8_t* data, size_t count) {
+    m_cpu.loadLibrary(data, count);
+}
+
+void TI59Machine::loadConstants(const uint8_t* data, size_t count) {
+    m_cpu.loadConstants(data, count);
+}
+
+void TI59Machine::reset() {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_cpu.reset();
+    m_cpu.pressKey(4, cardSwitchCol());  // restore card-absent state after key[] wipe
+    m_cpu.setPrinterConnected(m_printerConnected);
+    m_cpu.setPrinterTrace(m_printerTrace);  // TRACE is a physical latch: survives reset
+}
+
+uint32_t TI59Machine::step() {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    auto r = static_cast<uint32_t>(m_cpu.step());
+    if (m_cpu.consumeBreakpointHit()) {
+        r |= kBreakpointHit;
+    }
+    return r;
+}
+
+void TI59Machine::pressKey(int row, int col) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_cpu.pressKey(row, col);
+}
+
+void TI59Machine::releaseKey(int row, int col) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_cpu.releaseKey(row, col);
+}
+
+DisplaySnapshot TI59Machine::takeDisplay() {
+    return m_cpu.takeDisplay();
+}
+
+void TI59Machine::serialiseRAM(uint8_t* dst) const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_ram.serialise(dst);
+}
+
+void TI59Machine::deserialiseRAM(const uint8_t* src) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_ram.deserialise(src);
+}
+
+// ── State file load helpers ────────────────────────────────────────────────────
+
+void TI59Machine::writeProgram(const uint8_t* keycodes, int count) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    // 8 steps per register; never write past the physical 120-register RAM.
+    if (count > RAM::TOTAL_REGS * 8) count = RAM::TOTAL_REGS * 8;
+    for (int stepAddr = 0; stepAddr < count; stepAddr++) {
+        uint8_t keycode = keycodes[stepAddr];
+        // Keycodes are 2-digit decimal (00-99); ROM stores/reads them as BCD decimal digits.
+        // nibble at (step&7)*2   = units digit (BCD LSD)
+        // nibble at (step&7)*2+1 = tens  digit (BCD MSD)
+        int regIdx = stepAddr >> 3;
+        m_ram.write(regIdx, (stepAddr & 7) * 2,       keycode % 10);
+        m_ram.write(regIdx, ((stepAddr & 7) * 2) + 1, keycode / 10);
+    }
+}
+
+void TI59Machine::writeDataRegister(int regNum, const uint8_t* nibbles16) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    const int idx = dataRegRAMIndexLocked(regNum);
+    if (idx >= 0) m_ram.writeReg(idx, nibbles16);
+}
+
+int TI59Machine::partitionProgramRegs() const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    // The partition is stored live in two SCOM locations by the ROM's OP 17 handler.
+    // SCOM[9][0] encodes programRAMregs / 10 as a single hex nibble (0–12).
+    // E.g. value 6 → 60 program regs → 480 steps (the factory default "6 OP 17").
+    // Discovered empirically: diffing SCOM across "0 OP 17", "5 OP 17", "10 OP 17".
+    return static_cast<int>(m_cpu.scomNibble(9, 0)) * 10;
+}
+
+void TI59Machine::setPartitionProgramRegs(int programRAMregs) {
+    // Mirror what the ROM's OP 17 handler writes.  Both SCOM locations must be
+    // updated or the ROM's AOS stack / display code will use stale values.
+    //
+    // SCOM[9][0]     = n            (single nibble, range 0–12)
+    // SCOM[13][8..9] = n as 2-digit BCD, LSD at nibble [8], MSD at nibble [9]
+    //
+    // where n = programRAMregs / 10.
+    // programRAMregs must be a multiple of 10 in [0, 120].
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    int n = programRAMregs / 10;
+    m_cpu.setSCOMNibble(9,  0, static_cast<uint8_t>(n));
+    m_cpu.setSCOMNibble(13, 8, static_cast<uint8_t>(n % 10));  // BCD units
+    m_cpu.setSCOMNibble(13, 9, static_cast<uint8_t>(n / 10));  // BCD tens
+}
+
+int TI59Machine::insertedModuleNumber() const {
+    // SCOM[9][4] = tens nibble, SCOM[9][3] = units nibble
+    // (hardware encoding: nibble4=0,nibble3=1 → ML01; nibble4=1,nibble3=0 → ML10)
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    int tens  = static_cast<int>(m_cpu.scomNibble(9, 4));
+    int units = static_cast<int>(m_cpu.scomNibble(9, 3));
+    return tens * 10 + units;
+}
+
+uint16_t TI59Machine::libExecPC() const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.libExecPC();
+}
+
+uint64_t TI59Machine::elapsedTicks() const {
+    return m_cpu.elapsedTicks();
+}
+
+// ── Magnetic card reader ───────────────────────────────────────────────────────
+
+int TI59Machine::cardSwitchCol() const {
+    return m_variant == MachineVariant::TI59 ? 10 : 7;
+}
+
+void TI59Machine::insertCard(const uint8_t* data, size_t count) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_cpu.insertCard(data, count);
+}
+
+std::vector<uint8_t> TI59Machine::cardEject() {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.cardEject();
+}
+
+// Card state is mutated inside step() (IN CRD / OUT CRD / CRD_OFF), so even
+// these boolean getters must take the lock to avoid racing the emulation thread.
+bool TI59Machine::isCardPresent() const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.isCardPresent();
+}
+
+bool TI59Machine::isWaitingForCard() const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.isWaitingForCard();
+}
+
+int TI59Machine::cardMode() const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.cardMode();
+}
+
+// ── Printer ────────────────────────────────────────────────────────────────────
+
+// The printer line queues are protected by m_prnMutex inside TMC0501; taking
+// m_keyMutex here would only add contention with the emulation loop (same
+// pattern as the trace-frame drains).
+std::vector<std::string> TI59Machine::drainPrinterLines() {
+    return m_cpu.drainPrinterLines();
+}
+
+std::vector<PrinterCodeLine> TI59Machine::drainPrinterCodeLines() {
+    return m_cpu.drainPrinterCodeLines();
+}
+
+void TI59Machine::pressPrinterPrint(bool pressed) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_cpu.pressPrinterPrint(pressed);
+}
+
+void TI59Machine::pressPrinterAdv(bool pressed) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_cpu.pressPrinterAdv(pressed);
+}
+
+void TI59Machine::setPrinterTrace(bool enabled) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_printerTrace = enabled;
+    m_cpu.setPrinterTrace(enabled);
+}
+
+void TI59Machine::setPrinterConnected(bool connected) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_printerConnected = connected;
+    // Attaching or detaching the printer physically releases the TRACE latch.
+    m_printerTrace = false;
+    m_cpu.setPrinterConnected(connected);
+    m_cpu.setPrinterTrace(false);
+}
+
+// ── Trace / debug API ──────────────────────────────────────────────────────────
+
+void TI59Machine::setTraceFlags(uint32_t f) { m_cpu.setTraceFlags(f); }
+uint32_t TI59Machine::traceFlags() const    { return m_cpu.traceFlags(); }
+
+void TI59Machine::setDebugLevel(uint8_t level) { m_cpu.setDebugLevel(level); }
+
+std::vector<DebugEvent> TI59Machine::drainDebugEvents() {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.drainDebugEvents();
+}
+
+void TI59Machine::addBreakpoint(uint16_t pc) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_cpu.addBreakpoint(pc);
+}
+
+void TI59Machine::removeBreakpoint(uint16_t pc) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_cpu.removeBreakpoint(pc);
+}
+
+void TI59Machine::clearBreakpoints() {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_cpu.clearBreakpoints();
+}
+
+bool TI59Machine::loadDebugOverlay(const uint16_t* data, size_t count) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_rom.loadOverlay(data, count);
+}
+
+void TI59Machine::clearDebugOverlay() {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_rom.clearOverlay();
+}
+
+bool TI59Machine::runDebugOverlay(uint16_t startAddr, uint32_t maxSteps,
+                                  uint32_t* outSteps) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.runDebugInjectedProgram(startAddr, maxSteps, outSteps);
+}
+
+uint32_t TI59Machine::drainCpuFrames(CpuFrame* out, uint32_t max, uint32_t* outLost) {
+    return m_cpu.drainCpuFrames(out, max, outLost);
+}
+
+uint32_t TI59Machine::readCpuFrames(CpuFrame* out, uint32_t max) const {
+    return m_cpu.readCpuFrames(out, max);
+}
+
+uint32_t TI59Machine::stepN(uint32_t n, bool stopOnBreakpoint) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    uint32_t done = 0;
+    while (done < n) {
+        m_cpu.step();
+        done++;
+        if (stopOnBreakpoint && m_cpu.consumeBreakpointHit()) {
+            break;
+        }
+    }
+    return done;
+}
+
+uint32_t TI59Machine::stepUntilNextKeycode(uint32_t maxCycles) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    uint32_t done = 0;
+    while (done < maxCycles) {
+        int r = m_cpu.step();
+        done += static_cast<uint32_t>(r & TMC0501::kWeightMask);  // weight: 1 active, 4 IDLE
+        if (m_cpu.consumeBreakpointHit()) { break; }
+        if (r & TMC0501::kStepBoundary) { break; }
+    }
+    return done;
+}
+
+TMC0501::StepBoundary TI59Machine::lastStepBoundary() const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.lastStepBoundary();
+}
+
+uint16_t TI59Machine::pc() const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.pc();
+}
+
+void TI59Machine::beginNextStep() {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    m_cpu.beginNextStep();
+}
+
+std::string TI59Machine::disassemble(uint16_t pc, uint16_t opcode) {
+    return TMC0501::disassemble(pc, opcode);
+}
+
+// ── Calculator-level read API ──────────────────────────────────────────────────
+
+double TI59Machine::decodeBCD(const uint8_t* n) {
+    // Check for zero / NaN / Inf (all-zero or all-zero mantissa)
+    bool allZero = true;
+    for (int i = 0; i < 16; i++) { if (n[i] != 0U) { allZero = false; break; } }
+    if (allZero) { return 0.0; }
+
+    // n[0]: bit 1 = mantissa sign (1=negative), bit 2 = exponent sign (1=negative)
+    // n[1]: exponent units (BCD LSD), n[2]: exponent tens (BCD MSD) — magnitude 0–99
+    // n[15]=mantissa MSD .. n[3]=mantissa LSD  (13 digits)
+    bool negative = (n[0] & 2) != 0;   // bit 1 = mantissa sign
+    bool negExp   = (n[0] & 4) != 0;   // bit 2 = exponent sign
+    int  exp      = (n[2] * 10) + n[1];  // exponent magnitude 0–99
+    if (negExp) { exp = -exp; }
+
+    // Reconstruct mantissa from D[15] (MSD) down to D[3] (LSD)
+    double mantissa = 0.0;
+    for (int i = 15; i >= 3; i--) {
+        mantissa = (mantissa * 10.0) + static_cast<double>(n[i] & 0x0FU);
+    }
+    // mantissa is now a 13-digit integer; scale to [1.0, 10.0)
+    mantissa /= 1e12;
+
+    double value = mantissa * std::pow(10.0, static_cast<double>(exp));
+    return negative ? -value : value;
+}
+
+double TI59Machine::readDataReg(int regNum) const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    const int idx = dataRegRAMIndexLocked(regNum);
+    return idx >= 0 ? decodeBCD(m_ram.readReg(idx)) : 0.0;
+}
+
+int TI59Machine::dataRegCount() const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return dataRegCountLocked();
+}
+
+int TI59Machine::dataRegCountLocked() const {
+    // The ROM's highest register number, BCD in SCOM[13] nibbles 5–3: 119 on
+    // the TI-59, 59 on the TI-58/58C. A TI-58C partitioned like a TI-59
+    // (examples/repartition.ti58c) has 119 too, and its R56–R59 are then the
+    // extra registers RAM 63–60. Zero before the ROM has booted.
+    const int top = m_cpu.scomNibble(13, 5) * 100 + m_cpu.scomNibble(13, 4) * 10 + m_cpu.scomNibble(13, 3);
+    if (top == 0) return hasConstantMemory(m_variant) ? 60 : m_ram.size();
+    return top + 1;
+}
+
+int TI59Machine::dataRegRAMIndexLocked(int regNum) const {
+    const int idx = dataRegCountLocked() - 1 - regNum;
+    return (regNum >= 0 && idx >= 0 && idx < m_ram.size()) ? idx : -1;
+}
+
+uint8_t TI59Machine::readProgramStep(int stepAddr) const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    // The partition nibble in SCOM[9][0] can transiently claim more registers
+    // than physically exist (raw 0xD–0xF); never index past the 120-register RAM.
+    if (stepAddr < 0 || stepAddr >= RAM::TOTAL_REGS * 8) return 0;
+    int regIdx = stepAddr >> 3;  // Each register holds 8 steps (2 nibbles per step)
+    uint8_t tens  = m_ram.read(regIdx, ((stepAddr & 7) * 2) + 1);
+    uint8_t units = m_ram.read(regIdx,  (stepAddr & 7) * 2);
+    return static_cast<uint8_t>((tens * 10) + units);
+}
+
+uint8_t TI59Machine::readROMKeycode(int addr) const {
+    return m_cpu.romKeycode(addr);
+}
+
+CpuFrame TI59Machine::snapshotCPU() const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.snapshotCPU();
+}
+
+std::string TI59Machine::printerBufferContent() const {
+    // m_prnBuf is std::string[]; copying while step() assigns would be UB,
+    // so this read must serialise against the emulation thread.
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    return m_cpu.printerBufferContent();
+}
+
+// Bounded by the physical 120-register RAM (not the per-model limit): existing
+// callers legitimately clear physical registers beyond the accessible range.
+void TI59Machine::copyRAMReg(int reg, uint8_t* out16) const {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    if (reg < 0 || reg >= RAM::TOTAL_REGS) { memset(out16, 0, 16); return; }
+    memcpy(out16, m_ram.readReg(reg), 16);
+}
+
+void TI59Machine::writeRAMReg(int reg, const uint8_t* nibbles16) {
+    std::lock_guard<std::mutex> lock(m_keyMutex);
+    if (reg < 0 || reg >= RAM::TOTAL_REGS) return;
+    m_ram.writeReg(reg, nibbles16);
+}

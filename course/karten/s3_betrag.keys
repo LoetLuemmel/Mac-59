@@ -1,0 +1,2 @@
+# s3_betrag: Beispielprogramm des TI-59-Kurses (aus course/beispiele/s3_betrag.txt)
+2nd SBR A STO 0 1 0 x<>t RCL 0 1 2nd 4 B +/- 2nd SBR B R/S

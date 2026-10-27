@@ -1,0 +1,1174 @@
+/* The printer's paper: a CEditText whose balloon (item 4 of 'hrct' kPrinterHelpID) TCL places at the pane,
+   wherever the paper is scrolled to. */
+class CPaperText : public CEditText
+{
+public:
+	CPaperText(CView *anEnclosure, CBureaucrat *aSupervisor, short aWidth, short aHeight, short aHEncl,
+			   short aVEncl, SizingOption aHSizing, SizingOption aVSizing, short aLineWidth, Boolean aScrollHoriz)
+		: CEditText(anEnclosure, aSupervisor, aWidth, aHeight, aHEncl, aVEncl, aHSizing, aVSizing,
+					aLineWidth, aScrollHoriz) { helpResIndex = 4; }
+	virtual short GetHelpResID(void) { return kPrinterHelpID; }
+};
+
+TCL_DEFINE_CLASS_M1(CMain, x_CMain);
+
+CMain *gTI59 = NULL;		/* the calculator, for CApp::OpenDocument: a card opened in the Finder goes into it */
+
+/**** C O N S T R U C T I O N / D E S T R U C T I O N   M E T H O D S ****/
+
+
+void CMain::ICMain()
+
+{
+	Handle	h;
+
+	display = NULL;
+	body = NULL;
+	history = NULL;
+	histScroll = NULL;
+	prnWindow = NULL;
+	helpWindow = NULL;
+	helpText = NULL;
+	prnPlaced = FALSE;
+	chore = NULL;
+	fullSpeed = FALSE;
+	printer = TRUE;
+	listStopOn = TRUE;
+	lastTick = TickCount();
+	budget = 0;
+	tapHead = tapCount = 0;
+	tapKey = tapPhase = 0;
+	tapCycles = 0;
+	blankFeeds = 0;
+	cardState = 0;
+	cardHelp = -1;
+	secondKey = NULL;
+	traceKey = NULL;
+	trace = FALSE;
+	prnBtnCycles = 0;
+	romOK = FALSE;
+	moduleOK = FALSE;
+	pendCard = FALSE;
+	secondPending = FALSE;
+	gTI59 = this;
+
+	romHelpShown = FALSE;
+
+	core = new TI59Core;
+	h = GetResource('TROM', 128);						/* the private build carries the ROM	*/
+	if (core != NULL && h != NULL && GetHandleSize(h) == (long) kTI59BlobBytes) {
+		HLock(h);
+		core->LoadBlob((const u8 *) *h);
+		HUnlock(h);
+		romOK = TRUE;
+	}
+	if (h != NULL) ReleaseResource(h);
+	if (core != NULL && !romOK) romOK = LoadRomFolder();	/* the public one reads Calc-U-59's dumps	*/
+	if (romOK) {
+		core->PowerOn();
+		core->SetPrinterConnected((u8) printer);
+	}
+
+	moduleOK = FALSE;									/* the solid-state module	*/
+	h = GetResource('TLIB', 128);
+	if (romOK && h != NULL && GetHandleSize(h) == 5000L) {
+		HLock(h);
+		core->LoadLibrary((const u8 *) *h, 5000UL);
+		HUnlock(h);
+		moduleOK = TRUE;
+	}
+	if (h != NULL) ReleaseResource(h);
+	if (romOK && !moduleOK) moduleOK = LoadModuleFolder();
+	if (!romOK) HMSetMenuResID(130, 131);				/* Mars Lander grey because the ROM is missing, not the module */
+
+	Ix_CMain();
+}
+
+
+/******************************************************************************
+ MakeNewWindow {OVERRIDE}
+
+	Everything is enclosed by the WINDOW, not by itsMainPane: the main pane
+	keeps Visual Architect's original 306 x 237 view and clips below y 237.
+	The printer window is made here and placed beside the calculator once
+	the calculator's window has found its place (first RunCpu).
+
+ ******************************************************************************/
+
+void CMain::MakeNewWindow()
+
+{
+	short	i;
+	Rect	b;
+
+	x_CMain::MakeNewWindow();
+	{															/* VA's view limits the window	*/
+		Rect sr;												/* to 512 x 342; ChangeSize	*/
+		SetRect(&sr, 40, 40, 1024, 768);						/* obeys that limit			*/
+		itsWindow->SetSizeRect(&sr);
+	}
+	itsWindow->ChangeSize(kWinWidth, kWinHeight);
+	itsWindow->SetTitle("\pMac-59");						/* VA's view calls it Rechner	*/
+
+	body = new CBodyPane(itsWindow, this, kWinWidth, kWinHeight);	/* first: drawn below the rest */
+	display = new CLedDisplay(itsWindow, this, 272, 38, 12, 26);
+
+	for (i = 0; i < kKeyCount; i++) {
+		CKeyPane *k = new CKeyPane(itsWindow, this, 48, 40,
+					 (short) (14 + 56 * kKeys[i].col), (short) (118 + 44 * kKeys[i].row),
+					 kKeys[i].legend, kKeys[i].second, kKeys[i].style,
+					 cmdKeyBase + (kKeys[i].row + 1) * 10 + kKeys[i].col + 1);
+		k->SetHelp((short) (i + 1), kKeyHelpID);		/* the key's balloon, without or with 2nd */
+		if (kKeys[i].style == kKeySecond) secondKey = k;
+	}
+
+	SetRect(&b, 400, 60, 400 + kPrnWidth, 60 + kWinHeight);
+	prnWindow = new CWindow(&b, FALSE, documentProc, FALSE, FALSE, this);	/* with a size box */
+	prnWindow->SetTitle("\pPC-100C");
+	{														/* wider and longer paper; the	*/
+		Rect sr;											/* keys need 208 pixels			*/
+		SetRect(&sr, kPrnWidth, 200, 400, 740);
+		prnWindow->SetSizeRect(&sr);
+	}
+	CKeyPane *prnPrintKey = new CKeyPane(prnWindow, this, 69, 40, 0, 0, "PRINT", "", kKeyDark, cmdPrnPrint);	/* the printer's keys */
+	CKeyPane *prnAdvKey = new CKeyPane(prnWindow, this, 69, 40, 69, 0, "ADV", "", kKeyDark, cmdPrnAdv);
+	traceKey = new CKeyPane(prnWindow, this, 70, 40, 138, 0, "TRACE", "", kKeyDark, cmdPrnTrace);
+	prnPrintKey->SetHelp(1, kPrinterHelpID);			/* balloons placed by TCL at the panes: the paper's */
+	prnAdvKey->SetHelp(2, kPrinterHelpID);				/* scrolling moves this window's origin, which put  */
+	traceKey->SetHelp(3, kPrinterHelpID);				/* the static 'hrct' rectangles off the keys        */
+	histScroll = new CScrollPane(prnWindow, this, kPrnWidth, kWinHeight - 40, 0, 40,
+								 sizELASTIC, sizELASTIC, FALSE, TRUE, TRUE);	/* follows the window */
+	history = new CPaperText(histScroll, this, kPrnWidth - 18, kWinHeight - 42, 0, 0,
+							sizELASTIC, sizELASTIC, -1, FALSE);
+	history->SetFontNumber(kMonaco);
+	history->SetFontSize(9);
+	history->Specify(kNotEditable, kSelectable, kNotStylable);	/* select + Copy, plain TEXT */
+	histScroll->InstallPanorama(history);
+
+	itsGopher = this;		/* keys and Copy go to the calculator, not to a text pane */
+
+	ShowInfo();
+}
+
+
+void CMain::MakeWindowName(Str255 newName)
+{
+	itsWindow->GetTitle(newName);
+}
+
+
+void CMain::MakeNewContents()
+{
+	chore = new CCpuChore;
+	chore->itsMain = this;
+	gApplication->AssignIdleChore(chore);
+}
+
+void CMain::ContentsToWindow()	{}
+void CMain::WindowToContents()	{}
+
+/* CDocument declares OpenFile pure virtual; Visual Architect generates it only
+   for documents that use a file ("Use file" is off for Rechner). */
+void CMain::OpenFile(SFReply *macSFReply)	{}
+
+
+/* The chore and the printer window are not the document's to free; the core is. */
+Boolean CMain::Close(Boolean quitting)
+{
+	if (chore != NULL) {
+		gApplication->CancelIdleChore(chore);
+		delete chore;
+		chore = NULL;
+	}
+	if (prnWindow != NULL) {
+		delete prnWindow;
+		prnWindow = NULL;
+	}
+	if (helpWindow != NULL) {
+		delete helpWindow;
+		helpWindow = NULL;
+	}
+	if (core != NULL) {
+		delete core;
+		core = NULL;
+	}
+	if (gTI59 == this) gTI59 = NULL;
+	return x_CMain::Close(quitting);
+}
+
+
+/******************************************************************************
+ DoCommand / UpdateMenus / DoKeyDown
+
+ ******************************************************************************/
+
+void CMain::DoCommand(long theCommand)
+
+{
+	if (theCommand > cmdKeyBase && theCommand < cmdKeyBase + 100)
+		QueueKey((short) (theCommand - cmdKeyBase));
+	else if (theCommand == cmdCopy)
+		CopyResult();
+	else if (theCommand == cmdPaste)
+		PasteKeys();
+	else if (theCommand == cmdPrnPrint || theCommand == cmdPrnAdv) {
+		if (!romOK || !printer) { SysBeep(1); return; }
+		if (theCommand == cmdPrnPrint) core->PressPrinterPrint(1);
+		else core->PressPrinterAdv(1);
+		prnBtnCycles = kHoldCycles;
+	}
+	else if (theCommand == cmdPrnTrace) {
+		if (!romOK || !printer) { SysBeep(1); return; }
+		trace = (Boolean) !trace;
+		core->SetPrinterTrace((u8) trace);
+		traceKey->SetLatched(trace);
+	}
+	else if (theCommand == cmdMarsLander) {
+		if (!moduleOK) { SysBeep(1); return; }
+		QueueKey(21); QueueKey(31); QueueKey(82); QueueKey(72);	/* 2nd Pgm 1 4 */
+		body->SetCue(0, "Burn");
+		body->SetCue(1, "Fuel");
+		body->SetCue(2, "Vel.Alt");
+		body->SetCue(3, "");
+		body->SetCue(4, "Start");
+	}
+	else if (theCommand == cmdLanderHelp)
+		ShowHelp(300, "Mars Lander \xD0 Anleitung", "Mars Lander Anleitung");
+	else if (theCommand == cmdMoonHelp)
+		ShowHelp(301, "Mondlandung \xD0 Anleitung", "Mondlandung Anleitung");
+	else if (theCommand == cmdCardHelp)
+		ShowCardHelp(cardHelp);
+	else if (theCommand == cmdCourseHelp)
+		ShowHelp(302, "Mac-59 \xD0 Programmierkurs", "Programmierkurs Anleitung");
+	else if (theCommand == cmdTearOff)
+		DoCmdClearHistory();
+	else if (theCommand == cmdSavePaper)
+		SavePaper();
+	else if (theCommand == cmdPrinterOn)
+		SetPrinter((Boolean) !printer);
+	else if (theCommand == cmdListStop)
+		listStopOn = (Boolean) !listStopOn;
+	else if (theCommand == cmdReadCard)
+		ReadCard();
+	else if (theCommand == cmdBlankCard)
+		InsertBlankCard();
+	else if (theCommand == cmdSelectAll && history != NULL) {
+		if (prnWindow != NULL && printer) prnWindow->Select();
+		history->SelectAll(TRUE);
+	}
+	else
+		x_CMain::DoCommand(theCommand);
+}
+
+
+void CMain::UpdateMenus()
+
+{
+	x_CMain::UpdateMenus();
+	gBartender->EnableCmd(cmdCopy);
+	gBartender->EnableCmd(cmdPaste);
+	gBartender->EnableCmd(cmdSelectAll);
+	gBartender->EnableCmd(cmdReadCard);
+	gBartender->EnableCmd(cmdBlankCard);
+	gBartender->EnableCmd(cmdTearOff);
+	gBartender->EnableCmd(cmdSavePaper);
+	gBartender->EnableCmd(cmdPrinterOn);
+	if (moduleOK) gBartender->EnableCmd(cmdMarsLander);
+	gBartender->EnableCmd(cmdLanderHelp);
+	gBartender->EnableCmd(cmdMoonHelp);
+	gBartender->EnableCmd(cmdCourseHelp);
+	if (cardHelp >= 0) gBartender->EnableCmd(cmdCardHelp);
+	gBartender->EnableCmd(cmdListStop);
+	gBartender->CheckMarkCmd(cmdPrinterOn, printer);
+	gBartender->CheckMarkCmd(cmdListStop, listStopOn);
+}
+
+
+void CMain::DoKeyDown(char theChar, Byte keyCode, EventRecord *macEvent)
+
+{
+	short	code = KeyForChar(theChar);
+
+	if (code != 0) QueueKey(code);
+	else x_CMain::DoKeyDown(theChar, keyCode, macEvent);
+}
+
+
+/******************************************************************************
+ The CPU
+
+ ******************************************************************************/
+
+void CCpuChore::Perform(long *maxSleep)
+{
+	if (itsMain != NULL) itsMain->RunCpu(maxSleep);
+}
+
+
+void CMain::QueueKey(short code)
+{
+	if (!romOK || tapCount >= kTapQueue) { SysBeep(1); return; }
+	tapQueue[(tapHead + tapCount) % kTapQueue] = code;
+	tapCount++;
+	Boolean second = (Boolean) (code == 21 && !secondPending);	/* 2nd toggles, as in the ROM: 2nd 2nd x2 = x2	*/
+	if (second != secondPending) {				/* TCL shows a balloon only when the pointer enters a */
+		secondPending = second;					/* view: forget the last one, so the key under the	*/
+		CView::cLastHelpView = NULL;			/* pointer shows its other text at once			*/
+		if (HMGetBalloons()) HMRemoveBalloon();
+		if (secondKey != NULL) secondKey->SetLatched(second);	/* lit until the next key (operator) */
+	}
+}
+
+
+/* One key at a time: held kHoldCycles, then released until the keyboard
+   loop runs again (at least kGapCycles, at most kMaxGapCycles). A key that
+   finds the TI busy (a running program, a listing on the printer) is held
+   kBusyHoldCycles: the ROM looks at the keyboard only between printed lines,
+   and R/S held 0.1 s did not stop 2nd List. */
+static unsigned long gTapHold = kHoldCycles;
+static ListStop gListStop;		/* zeroed: no listing seen yet */
+
+void CMain::StepTap(unsigned long w)
+{
+	u16 pc;
+
+	if (prnBtnCycles > 0) {							/* the printer's PRINT / ADV key	*/
+		prnBtnCycles -= (long) w;
+		if (prnBtnCycles <= 0) { core->PressPrinterPrint(0); core->PressPrinterAdv(0); }
+	}
+	if (tapKey == 0) {
+		if (gListStop.stopWanted) {					/* the listing passed the program's end		*/
+			gListStop.stopWanted = 0;
+			pc = core->PC();
+			if (pc < kTI59ScanLoLo || pc > kTI59ScanLoHi) {	/* only into a busy TI: idle, R/S would run */
+				tapKey = 91;
+				gTapHold = kBusyHoldCycles;
+				core->PressMatrix(tapKey);
+				tapPhase = 1;
+				tapCycles = 0;
+			}
+			return;
+		}
+		if (tapCount == 0) return;
+		tapKey = tapQueue[tapHead];
+		tapHead = (short) ((tapHead + 1) % kTapQueue);
+		tapCount--;
+		pc = core->PC();
+		gTapHold = (pc >= kTI59ScanLoLo && pc <= kTI59ScanLoHi) ? kHoldCycles : kBusyHoldCycles;
+		core->PressMatrix(tapKey);
+		tapPhase = 1;
+		tapCycles = 0;
+		return;
+	}
+	tapCycles += w;
+	if (tapPhase == 1) {
+		if (tapCycles >= gTapHold) {
+			core->ReleaseMatrix(tapKey);
+			tapPhase = 2;
+			tapCycles = 0;
+		}
+	}
+	else if (tapCycles >= kGapCycles) {
+		pc = core->PC();
+		if ((pc >= kTI59ScanLoLo && pc <= kTI59ScanLoHi) || tapCycles >= kMaxGapCycles)
+			tapKey = 0;
+	}
+}
+
+
+void CMain::RunCpu(long *maxSleep)
+{
+	unsigned long	now = TickCount(), until, w;
+	long			dt;
+	short			i;
+
+	if (!romOK || core == NULL) {
+		if (!romHelpShown && body != NULL) {			/* no ROM: say where it comes from, once	*/
+			romHelpShown = TRUE;
+			ShowHelp(303, "Mac-59 \xD0 ROM fehlt", "ROM Anleitung");
+		}
+		return;
+	}
+	if (!prnPlaced) PlacePrinter();
+
+	if (fullSpeed) {
+		until = now + 3;
+		do {
+			for (i = 0; i < 500; i++) StepTap(core->Step() & 0xFF);
+		} while (TickCount() < until);
+		*maxSleep = 0;
+	}
+	else {
+		dt = (long) (now - lastTick);
+		if (dt > 10) dt = 10;					/* after a pause: no catching up	*/
+		budget += dt * kTickCycles;
+		while (budget > 0) {
+			w = core->Step() & 0xFF;
+			budget -= (long) w;
+			StepTap(w);
+		}
+		if (*maxSleep > 1) *maxSleep = 1;
+	}
+	lastTick = now;
+	UpdateDisplay();
+	DrainPrinter();
+	if (cardState != 0 && !core->CardPresent()) FinishCard();	/* the ROM ended the pass */
+	if (pendCard && TickCount() - pendTick > 30 && tapKey == 0
+		&& core->PC() >= kTI59ScanLoLo && core->PC() <= kTI59ScanLoHi) {	/* a card from the Finder, into an idle TI */
+		pendCard = FALSE;
+		ReadCardFile(pendName, pendVRef);
+	}
+}
+
+
+/* What the multiplex drove since the last call: a cell that was not driven is dark. */
+void CMain::UpdateDisplay()
+{
+	TI59Display		d;
+	unsigned char	seg[12], dp[12];
+	short			i;
+
+	core->TakeDisplay(&d);
+	if (d.pollTicks == 0) return;
+	for (i = 0; i < 12; i++) {
+		seg[i] = 0;
+		if (d.litTicks[i] != 0)
+			switch (d.ctrl[i]) {
+				case 0: case 1: case 8: case 9: seg[i] = kDigitSeg[(d.digits[i] & 0x0F) % 10]; break;
+				case 5: seg[i] = (unsigned char) (d.digits[i] == 0 ? kSegMinus : kSegDegree); break;
+				case 6: seg[i] = kSegMinus; break;
+			}
+		dp[i] = (unsigned char) (d.dpTicks[i] != 0);
+	}
+	if (d.cTicks != 0) seg[11] = kSegC;			/* the C annunciator				*/
+	display->SetCells(seg, dp);
+}
+
+
+/******************************************************************************
+ The printer
+
+	Its window sits right of the calculator and is shown while the printer
+	is connected. Paper advance comes in half lines: two blank half lines
+	make one blank line on the strip.
+
+ ******************************************************************************/
+
+void CMain::PlacePrinter()
+{
+	WindowPtr	w = itsWindow->GetMacPort();
+	Rect		c;
+
+	/* TCL builds the window off screen and moves it into place later: wait for that.
+	   The content region is in global coordinates whatever origin a pane has set. */
+	if (!((WindowPeek) w)->visible) return;
+	c = (**((WindowPeek) w)->contRgn).rgnBBox;
+	if (c.left < 0 || c.top < 20 || c.left > 1024) return;
+	prnWindow->Move((short) (c.left + kWinWidth + 8), c.top);
+	if (printer) {
+		prnWindow->Show();
+		itsWindow->Select();
+	}
+	prnPlaced = TRUE;
+}
+
+
+void CMain::DrainPrinter()
+{
+	TI59PrintLine	pl;
+	char			line[24];
+	short			i;
+	Boolean			blank;
+
+	while (core->TakePrintLine(&pl)) {
+		if (listStopOn && !ListStopLine(&gListStop, &pl, core)) continue;
+		blank = TRUE;
+		for (i = 0; i < 20; i++) {
+			line[i] = kPrnChars[pl.codes[i] & 0x3F];
+			if (pl.codes[i] != 0) blank = FALSE;
+		}
+		line[20] = '\0';
+		for (i = 19; i >= 0 && line[i] == ' '; i--) line[i] = '\0';	/* no trailing blanks to copy */
+		if (blank) {
+			if (++blankFeeds % 2 == 0) AddHistoryLine("");
+		}
+		else {
+			blankFeeds = 0;
+			AddHistoryLine(line);
+		}
+	}
+}
+
+
+void CMain::AddHistoryLine(const char *line)
+
+{
+	static char cr[2] = { '\r', '\0' };
+	long	len;
+	Handle	h;
+
+	h = history->GetTextHandle();
+	len = (h != NULL) ? GetHandleSize(h) : 0;
+	history->SetSelection(len, len, FALSE);
+	history->InsertTextPtr((Ptr) line, (long) CLen(line), TRUE);
+	history->InsertTextPtr(cr, 1L, TRUE);
+	history->ScrollToSelection();
+}
+
+
+void CMain::DoCmdClearHistory()
+
+{
+	static char empty[1] = { '\0' };
+
+	history->SetTextPtr(empty, 0L);
+	history->Refresh();
+}
+
+
+/******************************************************************************
+ Status line, Copy, Settings
+
+ ******************************************************************************/
+
+void CMain::ShowInfo()
+{
+	Str255	s;
+
+	if (!romOK) CToPStr("ROM fehlt", s);
+	else if (fullSpeed) CToPStr("Volle Geschwindigkeit", s);
+	else CToPStr("455 kHz", s);
+	if (body != NULL) body->SetInfo(s);
+}
+
+
+/* The display - or, with the printer window in front, the paper - as TEXT only:
+   no 'styl' for the emulator's scrap bridge. */
+void CMain::CopyResult()
+
+{
+	char	buf[48];
+	long	a, b, len;
+	Handle	h;
+
+	if (prnWindow != NULL && FrontWindow() == (WindowPtr) prnWindow->GetMacPort()) {
+		h = history->GetTextHandle();						/* the paper: the selection,	*/
+		len = (h != NULL) ? GetHandleSize(h) : 0;			/* or all of it				*/
+		history->GetSelection(&a, &b);
+		if (a >= b) { a = 0; b = len; }
+		if (h == NULL || b <= a) { SysBeep(1); return; }
+		ZeroScrap();
+		HLock(h);
+		PutScrap(b - a, 'TEXT', *h + a);
+		HUnlock(h);
+		return;
+	}
+	display->GetText(buf);
+	ZeroScrap();
+	PutScrap((long) CLen(buf), 'TEXT', (Ptr) buf);
+}
+
+
+/******************************************************************************
+ PasteKeys
+
+	Paste types the clipboard's TEXT on the calculator. A number goes in the
+	TI-59's way - mantissa, +/- if negative, EE, exponent, +/- - so
+	"-3,5E-2" works; everything else is one key per character (KeyForChar),
+	so "2+3*4=" works too. A '-' is a sign only where an operand starts.
+
+ ******************************************************************************/
+
+static Boolean IsDigit(char c) { return (Boolean) (c >= '0' && c <= '9'); }
+
+void CMain::PasteKeys()
+{
+	Handle	h = NewHandle(0);
+	long	off, len, i;
+	char	*s, c;
+	Boolean	operandNext = TRUE, neg, eneg;
+	short	code;
+
+	if (h == NULL) return;
+	len = GetScrap(h, 'TEXT', &off);
+	if (len > 200) len = 200;
+	if (len <= 0) { DisposHandle(h); SysBeep(1); return; }
+	HLock(h);
+	s = *h;
+	i = 0;
+	while (i < len) {
+		c = s[i];
+		if (operandNext && (IsDigit(c) || c == '.' || c == ',' ||
+			((c == '-' || c == '+') && i + 1 < len && (IsDigit(s[i + 1]) || s[i + 1] == '.' || s[i + 1] == ',')))) {
+			neg = (Boolean) (c == '-');
+			if (c == '-' || c == '+') i++;
+			while (i < len && (IsDigit(s[i]) || s[i] == '.' || s[i] == ','))
+				QueueKey(KeyForChar(s[i++]));
+			if (neg) QueueKey(94);							/* +/-						*/
+			if (i < len && (s[i] == 'e' || s[i] == 'E') && i + 1 < len &&
+				(IsDigit(s[i + 1]) || ((s[i + 1] == '-' || s[i + 1] == '+') && i + 2 < len && IsDigit(s[i + 2])))) {
+				i++;
+				QueueKey(52);								/* EE						*/
+				eneg = (Boolean) (s[i] == '-');
+				if (s[i] == '-' || s[i] == '+') i++;
+				while (i < len && IsDigit(s[i])) QueueKey(KeyForChar(s[i++]));
+				if (eneg) QueueKey(94);
+			}
+			operandNext = FALSE;
+			continue;
+		}
+		if (c == '\r' || c == '\n') { i++; continue; }		/* a line end is not '='		*/
+		code = KeyForChar(c);
+		if (code != 0) {
+			QueueKey(code);
+			operandNext = (Boolean) (c != ')');
+		}
+		i++;												/* spaces, line ends: skipped */
+	}
+	HUnlock(h);
+	DisposHandle(h);
+}
+
+
+/* 'DLOG'/'DITL' 201: 1 OK, 2 Abbrechen, 3 full speed, 4 printer connected. */
+void CMain::DoCmdSettings()
+
+{
+	DialogPtr	dlg;
+	short		item, type;
+	Handle		hFast, hPrn;
+	Rect		box;
+
+	dlg = GetNewDialog(kSettingsDLOG, NULL, (WindowPtr) -1L);
+	if (dlg == NULL) { SysBeep(5); return; }
+
+	GetDItem(dlg, 3, &type, &hFast, &box);
+	GetDItem(dlg, 4, &type, &hPrn, &box);
+	SetCtlValue((ControlHandle) hFast, fullSpeed ? 1 : 0);
+	SetCtlValue((ControlHandle) hPrn, printer ? 1 : 0);
+
+	do {
+		ModalDialog(NULL, &item);
+		if (item == 3 || item == 4) {
+			Handle hh = (item == 3) ? hFast : hPrn;
+			SetCtlValue((ControlHandle) hh, 1 - GetCtlValue((ControlHandle) hh));
+		}
+	} while (item != 1 && item != 2);
+
+	if (item == 1) {
+		fullSpeed = (Boolean) (GetCtlValue((ControlHandle) hFast) != 0);
+		if ((GetCtlValue((ControlHandle) hPrn) != 0) != (printer != 0))
+			SetPrinter((Boolean) !printer);
+	}
+	DisposDialog(dlg);
+	lastTick = TickCount();
+	budget = 0;
+	ShowInfo();
+}
+
+
+/******************************************************************************
+ The ROM from a folder
+
+	Without 'TROM' 128 (the public build) the ROM comes from Calc-U-59's text
+	dumps in a folder "ROM" next to the application (RomText.h reads them as
+	Calc-U-59's own loader does): TMC0582.txt, TMC0583.txt, TMC0571B.txt and
+	the two -CONST-K files; the Leisure Library from TMC0547.txt, there or in
+	ROM:solid-state: as Calc-U-59 keeps it. The default directory is the
+	application's folder, as for the manuals.
+
+ ******************************************************************************/
+
+static Ptr ReadRomFile(const char *name, long *len)		/* a whole file, NULL if absent	*/
+{
+	Str255	path;
+	short	ref;
+	Ptr		p;
+
+	CToPStr(name, path);
+	if (FSOpen(path, 0, &ref) != noErr) return NULL;
+	GetEOF(ref, len);
+	p = (*len > 0 && *len < 200000L) ? NewPtr(*len) : NULL;
+	if (p != NULL && FSRead(ref, len, p) != noErr) { DisposPtr(p); p = NULL; }
+	FSClose(ref);
+	return p;
+}
+
+Boolean CMain::LoadRomFolder()
+{
+	static const char *kFiles[5] = { ":ROM:TMC0582.txt", ":ROM:TMC0583.txt", ":ROM:TMC0571B.txt",
+									 ":ROM:TMC0582-CONST-K.txt", ":ROM:TMC0583-CONST-K.txt" };
+	Ptr		text[5];
+	long	len[5];
+	u8		*blob = (u8 *) NewPtr(kTI59BlobBytes);
+	u16		*words = (u16 *) NewPtr(kTI59RomWords * 2L);
+	Boolean	ok = FALSE;
+	short	i;
+
+	for (i = 0; i < 5; i++) text[i] = ReadRomFile(kFiles[i], &len[i]);
+	if (blob != NULL && words != NULL && RomTextBlob((const char * const *) text, len, blob, words)) {
+		core->LoadBlob(blob);
+		ok = TRUE;
+	}
+	for (i = 0; i < 5; i++) if (text[i] != NULL) DisposPtr(text[i]);
+	if (blob != NULL) DisposPtr((Ptr) blob);
+	if (words != NULL) DisposPtr((Ptr) words);
+	return ok;
+}
+
+Boolean CMain::LoadModuleFolder()
+{
+	long	len;
+	Ptr		text = ReadRomFile(":ROM:TMC0547.txt", &len);
+	u8		*img;
+	Boolean	ok = FALSE;
+
+	if (text == NULL) text = ReadRomFile(":ROM:solid-state:TMC0547.txt", &len);
+	if (text == NULL) return FALSE;
+	img = (u8 *) NewPtr(kRomTextModuleBytes);
+	if (img != NULL && RomTextModule(text, len, img) > 0) {
+		core->LoadLibrary(img, (u32) kRomTextModuleBytes);
+		ok = TRUE;
+	}
+	DisposPtr(text);
+	if (img != NULL) DisposPtr((Ptr) img);
+	return ok;
+}
+
+
+/******************************************************************************
+ Magnetic cards
+
+	A card is a file: one bank of 246 bytes, written as Calc-U-59's binary card
+	("Calc-U-59-CRD" + the bank; Calc-U-59 reads it, its pickers list names
+	ending in .u59), read in that layout, as 246 / 984 raw bytes, or as
+	Calc-U-59's text card ("Calc-U-59 Card 1.0", CardText.cp).
+
+	Reading: choose a file; it goes through the reader as an inserted card.
+	The ROM reads it if the calculator is idle and the card's partition is
+	the current one (otherwise the card runs through unread and the display
+	blinks); afterwards the display shows the bank number.
+	Writing: n 2nd Write, then a blank card; when the ROM has written it, the
+	bank is saved under a name you choose.
+
+ ******************************************************************************/
+
+static const char kCrdMagic[] = "Calc-U-59-CRD";			/* 13 bytes, no terminator used */
+#define kCrdMagicLen	13
+
+void CMain::CardMessage(const char *msg)
+{
+	Str255 s;
+	CToPStr(msg, s);
+	if (body != NULL) body->SetInfo(s);
+	SysBeep(1);
+}
+
+
+/* Karte einlesen... and File > Open list cards only (TRUE hides a file; folders are always listed):
+   the TI-59's own (creator 'TI59', type 'TICD'), Calc-U-59's by name (.u59, .bin) and raw banks by
+   size (246 bytes, 13 + 246 with Calc-U-59's header, 984 for all four banks). */
+static Boolean EndsWith(ConstStr255Param name, const char *ext)
+{
+	short	i, n = 0;
+	char	c;
+
+	while (ext[n] != 0) n++;
+	if (name[0] < n) return FALSE;
+	for (i = 0; i < n; i++) {
+		c = (char) name[name[0] - n + 1 + i];
+		if (c >= 'A' && c <= 'Z') c = (char) (c - 'A' + 'a');
+		if (c != ext[i]) return FALSE;
+	}
+	return TRUE;
+}
+
+pascal Boolean CardFileFilter(ParmBlkPtr pb)
+{
+	FInfo	*fi = &pb->fileParam.ioFlFndrInfo;
+	long	len = pb->fileParam.ioFlLgLen;
+
+	if (fi->fdType == 'APPL') return TRUE;						/* Mac-59 itself has the cards' creator */
+	if (fi->fdCreator == 'TI59' || fi->fdType == 'TICD') return FALSE;
+	if (EndsWith(pb->fileParam.ioNamePtr, ".u59") || EndsWith(pb->fileParam.ioNamePtr, ".bin")) return FALSE;
+	if (len == 246 || len == kCrdMagicLen + 246 || len == 984) return FALSE;
+	return TRUE;
+}
+
+
+void CMain::ReadCard()
+{
+	SFReply		r;
+	SFTypeList	types;
+	Point		where;
+
+	if (!romOK) { SysBeep(1); return; }
+	where.h = 80; where.v = 80;
+	SFGetFile(where, "\p", NewFileFilterProc(CardFileFilter), -1, types, NULL, &r);
+	lastTick = TickCount();
+	budget = 0;
+	if (r.good) ReadCardFile(r.fName, r.vRefNum);
+}
+
+
+/* A card opened in the Finder (CApp::OpenDocument): read when the TI idles, as a card is only read then;
+   after a launch by that very card the calculator is still powering up. */
+void CMain::QueueCard(ConstStr255Param name, short vRefNum)
+{
+	BlockMove(name, pendName, (long) name[0] + 1);
+	pendVRef = vRefNum;
+	pendCard = TRUE;
+	pendTick = TickCount();
+}
+
+
+void CMain::ReadCardFile(ConstStr255Param fName, short vRefNum)
+{
+	short		ref, skip = 0;
+	long		len, n;
+	Ptr			buf;
+
+	if (!romOK) { SysBeep(1); return; }
+	if (cardState != 0) { core->CardEject(); cardState = 0; }	/* one card at a time */
+	if (FSOpen(fName, vRefNum, &ref) != noErr) { CardMessage("Karte: nicht lesbar"); return; }
+	GetEOF(ref, &len);
+	if (len <= 0 || len > 32000) { FSClose(ref); CardMessage("Karte: falsche Groesse"); return; }
+	buf = NewPtr(len);
+	if (buf == NULL) { FSClose(ref); SysBeep(5); return; }
+	n = len;
+	FSRead(ref, &n, buf);
+	FSClose(ref);
+	if (n == kCrdMagicLen + 246 && memcmp(buf, kCrdMagic, kCrdMagicLen) == 0) { skip = kCrdMagicLen; n = 246; }
+	else if (n == 246 || n == 984) skip = 0;
+	else if (CardTextIs(buf, n)) {						/* Calc-U-59's text card		*/
+		u8 bank[246];
+		if (!CardTextParse(buf, n, bank)) { DisposPtr(buf); CardMessage("Textkarte fehlerhaft"); return; }
+		BlockMove(bank, buf, 246L);
+		skip = 0;
+		n = 246;
+	}
+	else {
+		CardMessage("Keine Kartendatei");
+		DisposPtr(buf);
+		return;
+	}
+	core->InsertCard((const u8 *) buf + skip, (u32) n);
+	DisposPtr(buf);
+	cardState = 1;
+	body->SetCardName((StringPtr) fName);
+	cardHelp = CardHelpIndex(fName);
+	if (cardHelp >= 0) ShowCardHelp(cardHelp);
+	ShowInfo();
+}
+
+
+void CMain::InsertBlankCard()
+{
+	if (!romOK) { SysBeep(1); return; }
+	if (cardState != 0) { core->CardEject(); cardState = 0; }
+	core->InsertCard(NULL, 0);
+	cardState = 2;
+	body->SetCardName("\pleere Karte");
+	cardHelp = -1;
+	ShowInfo();
+}
+
+
+/* The ROM ended the pass (CRD.OFF ejects the card): a written bank is saved. */
+void CMain::FinishCard()
+{
+	const u8	*bank = core->CardEject();
+	short		st = cardState, ref, bankNo;
+	OSErr		err;
+	SFReply		r;
+	Point		where;
+	Str255		name;
+	long		n;
+
+	cardState = 0;
+	if (st == 1) return;							/* read: the display says which bank	*/
+	if (bank == NULL) {
+		body->SetCardName("\p");
+		CardMessage("Karte leer: erst n 2nd Write");
+		return;
+	}
+	bankNo = (short) ((bank[2] & 0x0F) / 3 + 1);
+	CToPStr("Mac-59 Bank 1.u59", name);					/* Calc-U-59 lists .u59 / .bin	*/
+	name[12] = (unsigned char) ('0' + bankNo);
+	where.h = 80; where.v = 80;
+	SFPutFile(where, "\pKarte sichern als:", name, NULL, &r);
+	lastTick = TickCount();
+	budget = 0;
+	if (!r.good) { body->SetCardName("\p"); return; }
+	err = Create(r.fName, r.vRefNum, 'TI59', 'TICD');		/* creator 'TI59': a double-click opens the card in the TI-59 */
+	if (err != noErr && err != dupFNErr) { CardMessage("Karte: nicht gesichert"); return; }
+	if (FSOpen(r.fName, r.vRefNum, &ref) != noErr) { CardMessage("Karte: nicht gesichert"); return; }
+	SetEOF(ref, 0L);
+	n = kCrdMagicLen;
+	FSWrite(ref, &n, (Ptr) kCrdMagic);
+	n = 246;
+	FSWrite(ref, &n, (Ptr) bank);
+	FSClose(ref);
+	FlushVol(NULL, r.vRefNum);
+	body->SetCardName(r.fName);
+}
+
+
+/******************************************************************************
+ The Drucker menu
+
+	Angeschlossen connects or disconnects the PC-100C (its window shows and
+	hides with it; TRACE springs out, as on the hardware). Papier abreissen
+	tears the paper off: what was printed is gone. Papier sichern saves it as
+	a SimpleText document.
+
+ ******************************************************************************/
+
+void CMain::SetPrinter(Boolean on)
+{
+	printer = on;
+	if (core != NULL) core->SetPrinterConnected((u8) printer);	/* also releases TRACE */
+	trace = FALSE;
+	if (traceKey != NULL) traceKey->SetLatched(FALSE);
+	if (prnWindow != NULL && prnPlaced) {
+		if (printer) { prnWindow->Show(); itsWindow->Select(); }
+		else prnWindow->Hide();
+	}
+	ShowInfo();
+}
+
+
+void CMain::SavePaper()
+{
+	SFReply	r;
+	Point	where;
+	Handle	h = history->GetTextHandle();
+	long	len, n;
+	short	ref;
+	OSErr	err;
+
+	len = (h != NULL) ? GetHandleSize(h) : 0;
+	if (len == 0) { CardMessage("Das Papier ist leer"); return; }
+	where.h = 80; where.v = 80;
+	SFPutFile(where, "\pPapierstreifen sichern als:", "\pMac-59 Papier", NULL, &r);
+	lastTick = TickCount();
+	budget = 0;
+	if (!r.good) return;
+	err = Create(r.fName, r.vRefNum, 'ttxt', 'TEXT');			/* a SimpleText document		*/
+	if (err != noErr && err != dupFNErr) { CardMessage("Papier: nicht gesichert"); return; }
+	if (FSOpen(r.fName, r.vRefNum, &ref) != noErr) { CardMessage("Papier: nicht gesichert"); return; }
+	SetEOF(ref, 0L);
+	n = len;
+	HLock(h);
+	FSWrite(ref, &n, *h);
+	HUnlock(h);
+	FSClose(ref);
+	FlushVol(NULL, r.vRefNum);
+}
+
+
+/* The manual's text: styled TextEdit (headings bold), but Copy puts plain TEXT on the
+   clipboard only - a 'styl' scrap is what crashed Basilisk II on copying. */
+class CHelpText : public CStyleText
+{
+public:
+	CHelpText() {}		/* then IStyleText: TCL's CStyleText(...) constructor builds its TE in the
+						   CEditText constructor, where MakeMacTE is still CEditText's (TENew, one
+						   style); after construction it is CStyleText's (TEStylNew) */
+	virtual void DoCommand(long theCommand);
+	virtual void Scroll(long hDelta, long vDelta, Boolean redraw);
+};
+
+/* Lines of different heights: shifting the pixels and redrawing the exposed strip
+   (CPanorama::Scroll) tore the text; redraw it all instead. */
+void CHelpText::Scroll(long hDelta, long vDelta, Boolean redraw)
+{
+	CStyleText::Scroll(hDelta, vDelta, FALSE);
+	if (redraw) Refresh();
+}
+
+void CHelpText::DoCommand(long theCommand)
+{
+	long	a, b;
+	Handle	h;
+
+	if (theCommand != cmdCopy) { CStyleText::DoCommand(theCommand); return; }
+	GetSelection(&a, &b);
+	h = GetTextHandle();
+	if (h == NULL || b <= a) { SysBeep(1); return; }
+	ZeroScrap();
+	HLock(h);
+	PutScrap(b - a, 'TEXT', *h + a);
+	HUnlock(h);
+}
+
+
+/* A line of capitals (and blanks) is a heading. */
+static Boolean IsHeading(const char *p, long n)
+{
+	long i;
+
+	if (n < 3) return FALSE;
+	for (i = 0; i < n; i++)
+		if (!((p[i] >= 'A' && p[i] <= 'Z') || p[i] == ' ')) return FALSE;
+	return TRUE;
+}
+
+
+/* Headings bold 12 (the first line 14): every line of capitals in text p[0..len). */
+static void BoldHeadings(CHelpText *ht, const char *p, long len)
+{
+	TextStyle	st;
+	long		a, e;
+
+	ht->SetSelection(0, len, FALSE);
+	st.tsFont = kGeneva; st.tsSize = 10; st.tsFace = 0;
+	ht->SetStyle(doFont + doSize + doFace, &st, FALSE);
+	for (a = 0; a < len; a = e + 1) {
+		for (e = a; e < len && p[e] != '\r'; e++) ;
+		if (IsHeading(p + a, e - a)) {
+			ht->SetSelection(a, e, FALSE);
+			st.tsFace = bold;
+			st.tsSize = (short) (a == 0 ? 14 : 12);
+			ht->SetStyle(doFace + doSize, &st, FALSE);
+		}
+	}
+}
+
+
+/* A manual in a window of its own, beside the printer. The text is the SimpleText document
+   fileName next to the application, so it can be edited there - with its own styles
+   ('styl' 128) if it has more than one (formatted there), else headings made bold here; without the document it is
+   'TEXT' textID. Its close box only hides the window (CloseWind), the menu shows it again; the window
+   is shared by the manuals and loads another one's text when that is asked for. */
+static short gHelpID = 0;
+
+void CMain::ShowHelp(short textID, const char *title, const char *fileName)
+{
+	Rect			b, sr;
+	Handle			h = NULL;
+	StScrpHandle	sty = NULL;
+	Str255			t;
+	CHelpText		*ht;
+	CScrollPane		*sp;
+	long			len;
+	short			ref, rf, cur;
+
+	if (helpWindow == NULL) {
+		SetRect(&b, 530, 60, 1010, 500);
+		helpWindow = new CWindow(&b, FALSE, documentProc, FALSE, TRUE, this);
+		SetRect(&sr, 200, 120, 1000, 740);
+		helpWindow->SetSizeRect(&sr);
+		sp = new CScrollPane(helpWindow, this, 480, 440, 0, 0, sizELASTIC, sizELASTIC, FALSE, TRUE, TRUE);
+		ht = new CHelpText;
+		ht->IStyleText(sp, this, 462, 438, 0, 0, sizELASTIC, sizELASTIC, -1);
+		ht->Specify(kNotEditable, kSelectable, kStylable);
+		sp->InstallPanorama(ht);
+		sp->SetSteps(10, 13);		/* TCL's CEditText::GetSteps would take the TE's lineHeight,
+									   which a styled TE reports as -1: scrolling tore the text */
+		helpText = ht;
+	}
+	if (gHelpID != textID) {
+		gHelpID = textID;
+		ht = (CHelpText *) helpText;
+		ht->SetTextPtr("", 0);
+		CToPStr(fileName, t);
+		if (FSOpen(t, 0, &ref) == noErr) {				/* the SimpleText document	*/
+			GetEOF(ref, &len);
+			h = NewHandle(len);
+			if (h != NULL) { HLock(h); FSRead(ref, &len, *h); HUnlock(h); }
+			FSClose(ref);
+			cur = CurResFile();
+			rf = OpenResFile(t);
+			if (rf != -1) {
+				sty = (StScrpHandle) Get1Resource('styl', 128);
+				if (sty != NULL && (**sty).scrpNStyles < 2) sty = NULL;	/* one style: plain text */
+				if (sty != NULL) DetachResource((Handle) sty);
+				CloseResFile(rf);
+			}
+			UseResFile(cur);
+		}
+		else if ((h = GetResource('TEXT', textID)) != NULL) DetachResource(h);
+		if (h != NULL) {
+			len = GetHandleSize(h);
+			HLock(h);
+			if (sty != NULL) ht->InsertWithStyles(*h, len, sty);
+			else { ht->SetTextPtr(*h, len); BoldHeadings(ht, *h, len); }
+			ht->SetSelection(0, 0, FALSE);
+			ht->ScrollToSelection();	/* the other manual may have been scrolled */
+			HUnlock(h);
+			DisposHandle(h);
+			if (sty != NULL) DisposHandle((Handle) sty);
+		}
+	}
+	CToPStr(title, t);
+	helpWindow->SetTitle(t);
+	helpWindow->Show();
+	helpWindow->Select();
+}
+
+
+/* Help for a card: a course card opens its lesson in the Programmierkurs, a Mondlandung card the
+   Mondlandung manual - by the card's name, when it is read and with Mac-59 > Hilfe zur Karte. The
+   manual is scrolled to the end first, then to the lesson's title: TCL scrolls no further than it
+   must, so the title comes to stand at the top of the window. */
+struct CardHelpRow { const char *prefix; short textID; const char *title; const char *file; const char *mark; };
+static const CardHelpRow kCardHelp[] = {
+	{ "Kurs Temperatur", 302, "Mac-59 \xD0 Programmierkurs", "Programmierkurs Anleitung", "\r2.3 " },
+	{ "Kurs Betrag",     302, "Mac-59 \xD0 Programmierkurs", "Programmierkurs Anleitung", "\r3.2 " },
+	{ "Kurs Summe",      302, "Mac-59 \xD0 Programmierkurs", "Programmierkurs Anleitung", "\r3.3 " },
+	{ "Kurs Fakultaet",  302, "Mac-59 \xD0 Programmierkurs", "Programmierkurs Anleitung", "\r4.1 " },
+	{ "Kurs Indirekt",   302, "Mac-59 \xD0 Programmierkurs", "Programmierkurs Anleitung", "\r4.2 " },
+	{ "Mondlandung",     301, "Mondlandung \xD0 Anleitung",  "Mondlandung Anleitung",     "\rSTART\r" }
+};
+enum { kCardHelpRows = sizeof kCardHelp / sizeof kCardHelp[0] };
+
+short CMain::CardHelpIndex(ConstStr255Param name)
+{
+	short	i, k;
+
+	for (i = 0; i < kCardHelpRows; i++) {
+		const char *p = kCardHelp[i].prefix;
+		for (k = 0; p[k] != 0 && k < name[0] && name[k + 1] == p[k]; k++) ;
+		if (p[k] == 0) return i;
+	}
+	return -1;
+}
+
+void CMain::ShowCardHelp(short row)
+{
+	Handle	h;
+	long	len, pos, end, k;
+	const char *mark;
+
+	if (row < 0 || row >= kCardHelpRows) return;
+	ShowHelp(kCardHelp[row].textID, kCardHelp[row].title, kCardHelp[row].file);
+	if (helpText == NULL) return;
+	h = helpText->GetTextHandle();
+	len = helpText->GetLength();
+	if (h == NULL) return;
+	mark = kCardHelp[row].mark;
+	HLock(h);
+	for (pos = 0; pos < len; pos++) {
+		for (k = 0; mark[k] != 0 && pos + k < len && (*h)[pos + k] == mark[k]; k++) ;
+		if (mark[k] == 0) break;
+	}
+	if (pos < len) {
+		pos++;													/* past the line end before the title	*/
+		for (end = pos; end < len && (*h)[end] != '\r'; end++) ;
+		HUnlock(h);
+		helpText->SetSelection(len, len, FALSE);
+		helpText->ScrollToSelection();
+		helpText->SetSelection(pos, end, TRUE);
+		helpText->ScrollToSelection();
+	}
+	else HUnlock(h);
+}
+
+
+/* The manual's close box hides it; every other window goes the usual way. */
+void CMain::CloseWind(CWindow *theWindow)
+{
+	if (theWindow == helpWindow && helpWindow != NULL) helpWindow->Hide();
+	else x_CMain::CloseWind(theWindow);
+}

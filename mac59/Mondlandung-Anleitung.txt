@@ -1,0 +1,44 @@
+MONDLANDUNG
+Lunar Lander des TI-57, auf den TI-59 übertragen
+
+GESCHICHTE
+Dieses Spiel kommt vom TI-57, dem kleinen Bruder des TI-59: 50 Programmschritte, acht Speicher, nach dem Ausschalten alles weg. Für Pit Förster war es das allererste Programm überhaupt. Als kleiner Junge tippte er die Mondlandung in seinen TI-57, Schritt für Schritt, und versuchte, die Fähre heil herunterzubringen. Das Listing stammte aus einer Ausgabe der FUNKSCHAU. Einen TI-59 hatte er damals nicht. Jetzt läuft eine Mondlandung für den TI-57 hier, auf einem TI-59 im Macintosh (Mac-59), und die Landung gelingt mit einer Magnetkarte, die man nicht mehr abtippen muss. Es ist die Fassung von Paul Novaes, die auf ein Programm aus L'Ordinateur de Poche zurückgeht (siehe Herkunft); ob sie der aus der FUNKSCHAU gleicht, ist noch offen.
+
+ZIEL
+Sie steuern die Mondfähre Eagle, 2500 Fuß über der Mondoberfläche. Sie sinkt mit 100 Fuß pro Sekunde, im Tank sind 100 Gallonen. Setzen Sie sanft auf!
+
+START
+Mac-59 > Karte einlesen... und die Karte Mondlandung.u59 wählen; die Anzeige zeigt 1 (Bank 1). Dann A drücken: neues Spiel. Die Anzeige zeigt kurz den Treibstoff (100), dann Geschwindigkeit und Höhe in einer Zahl:
+   100.2500  =  100 Fuß/s abwärts, Höhe 2500 Fuß
+Ist die Zahl negativ, steigt die Fähre.
+
+TASTEN
+   A              neues Spiel
+   Zahl, dann R/S  so viele Gallonen pro Sekunde brennen, vier Sekunden lang
+   RST, dann R/S   Treibstoff und Geschwindigkeit.Höhe noch einmal zeigen
+   RCL 03         Resttreibstoff
+Nach R/S rechnet der TI gut zehn Sekunden (C in der Anzeige). Erst danach die nächste Zahl eingeben: R/S während der Rechnung hält das Programm an.
+
+PHYSIK
+Ein Zug dauert vier Sekunden. In jeder Sekunde sinkt die Höhe um die Geschwindigkeit, der Mond beschleunigt um 5 Fuß/s, und jede gebrannte Gallone bremst um 1 Fuß/s. Vom Tank wird die Brennmenge nur einmal pro Zug abgezogen; ist weniger da, brennt der Rest.
+
+ENDE
+Die Anzeige blinkt. Mindestens 0: gelandet; die Zahl ist Geschwindigkeit plus Höhe beim Aufsetzen, 0.0000 ist die perfekte Landung. Negativ: abgestürzt, die Zahl ist die Höhe unter der Oberfläche. CLR beendet das Blinken, A startet neu.
+
+ERPROBTE LANDUNG
+   0 0 0 16 30 6 9
+(jeweils Zahl, dann R/S). Ergebnis: 0.0000, perfekte Landung, 39 Gallonen übrig.
+
+TI-57 UND TI-59
+Auf dem TI-57 belegt die Mondlandung 50 Programmschritte, auf dem TI-59 126 (000 bis 125). Der TI-57 packt mehr in einen Schritt: jeder Schritt ist ein Byte, und darin stecken Taste, INV und Ziffer zusammen.
+   RCL 1, STO 3: TI-57 1 Schritt, TI-59 2 (RCL 01)
+   INV SUM 3: TI-57 1 Schritt, TI-59 3 (INV ist ein eigener Schritt)
+   Lbl 0, GTO 0, Fix 4: TI-57 1 Schritt, TI-59 2
+   x≥t, Dsz: TI-57 1 Schritt (überspringt den nächsten), TI-59 2 bis 3 (springt zu einem Label)
+Der TI-59 verschmilzt nur 2nd mit der Taste (2nd sin ist ein Schritt). Dafür hat er bis zu 960 Schritte, 100 Speicher und Sprünge an jede Adresse; der TI-57 hatte 50 Schritte und 8 Speicher, also musste jedes Byte möglichst viel tragen. Etwa 25 der 126 Schritte sind außerdem neu: A setzt die Startwerte selbst, die man beim TI-57 vorher mit STO eintippte.
+
+SCHLANKE FASSUNG
+Die Karte Mondlandung kurz.u59 spielt genau gleich und kommt mit 101 Schritten aus (000 bis 100). Sie nutzt, was der TI-59 mehr kann: Op 10 liefert das Vorzeichen der Geschwindigkeit ohne Sprung und Hilfsspeicher, Absturz und Landung springen bedingt zum fehlenden Label E', sodass die Anzeige gleich mit dem richtigen Wert blinkt, und RST ersetzt GTO 000. Kürzer als 50 Schritte wird sie trotzdem nicht: Die zweistelligen Speicher und die eigenen INV-Schritte bleiben.
+
+HERKUNFT
+Diese TI-57-Fassung hat Paul Novaes 2022 im Forum des HP Computer Museum veröffentlicht (Thread "TI-57 Lunar Lander ?", hpmuseum.org) und seiner TI-57-App RCL-57 beigelegt (github.com/n3times/rcl57). Sie geht auf ein älteres Programm aus der französischen Zeitschrift L'Ordinateur de Poche zurück, das Didier Lachieze 2019 im selben Thread zeigte; den Autor des Zeitschriftenprogramms haben wir noch nicht ermittelt. Gegenüber der Zeitschrift zeigt Paul Novaes' Fassung das Vorzeichen der Geschwindigkeit, lässt die Anzeige am Ende blinken und prüft Landung und Absturz jede Sekunde. Seine 50 Schritte sind hier Schritt für Schritt übertragen; neu ist A für ein neues Spiel.

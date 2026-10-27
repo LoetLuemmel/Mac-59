@@ -1,0 +1,24 @@
+# Mondlandung, schlanke Fassung - the TI-57 Lunar Lander on the TI-59 with the TI-59's own means:
+# Op 10 (signum) for the sign of the display, a conditional jump to the missing label E' to end the game
+# blinking, RST instead of GTO 000. Same registers and rules as mondlandung.keys.
+
+RCL 0 3   INV 2nd ( 2nd GTO                  # 000 fuel, as an integer, Pause
+RCL 0 2 / 4 INV 2nd lnx x                    # altitude / 10^4, times
+( RCL 0 1 + . 5 ) 2nd 9 1 0                  # the sign of v + 0.5 (Op 10): + for v >= 0
++ RCL 0 1 =   2nd ( 4   R/S                  # velocity.altitude, Fix 4, wait for the burn
+STO 0 4   x<>t   RCL 0 3   2nd 4 2nd sqrt    # fuel >= burn: Lbl cos
+STO 0 4                                      # otherwise burn what is left
+2nd SBR 2nd sqrt                             # Lbl cos
+RCL 0 4   INV SUM 0 3                        # fuel -= burn
+4 STO 0 0                                    # four seconds
+2nd SBR 2nd 1/x                              # Lbl tan: one second
+RCL 0 1   INV SUM 0 2                        # altitude -= velocity
+5 SUM 0 1                                    # gravity 5 ft/s^2
+RCL 0 4   INV SUM 0 1                        # thrust
+0 x<>t   RCL 0 2   INV 2nd 4 2nd E           # altitude < 0: crashed - no Lbl E', the display blinks
+6 x<>t   RCL 0 1 2nd / + RCL 0 2 =   INV 2nd 4 2nd E   # |v| + altitude < 6: landed, blinking
+2nd 0 0 2nd 1/x                              # Dsz 0: next second
+RST                                          # four seconds done: show the state
+2nd SBR A                                    # A: new game
+1 0 0 STO 0 1 STO 0 3   2 5 0 0 STO 0 2
+RST

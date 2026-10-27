@@ -1,0 +1,7 @@
+LEKTION 301 Sprünge
+SCHRITT Programm mit absolutem Sprung GTO 008 über "x 1 0" hinweg
+  LOESUNG CLR 2nd CE LRN x 2 GTO 0 0 8 x 1 0 = R/S LRN
+  ERWARTE programm 0 65 2 61 0 8 65 1 0 95 91
+PROBE
+  RST 5 R/S -> 10
+  RST 7 R/S -> 14

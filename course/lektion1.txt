@@ -1,0 +1,59 @@
+# Lektion 1 des TI-59-Kurses. Format: port/Course.h. Geprueft mit: build/coursecheck course/lektion1.txt
+LEKTION 1 Rechnen mit Speichern
+ZIEL Zwischenergebnisse speichern, zurückholen und im Speicher weiterrechnen.
+TEXT
+Der TI-59 hat Speicher mit zweistelligen Nummern: 00, 01, 02 und so weiter.
+STO legt die Zahl in der Anzeige in einen Speicher, RCL holt sie zurück,
+SUM zählt sie zu dem dazu, was schon im Speicher steht.
+
+TEIL Vormachen
+SCHRITT Rechne 2 x 3 = . Der TI-59 zeigt 6.
+  ERWARTE wert 6
+  TIPP Erst 2, dann x, dann 3, zuletzt =.
+  FEHLER wert 5 : Das war + statt x.
+  FALSCH 2 + 3 =
+  LOESUNG 2 x 3 =
+SCHRITT Lege das Ergebnis mit STO 01 in Speicher 01 ab.
+  ERWARTE register 01 6
+  TIPP STO, dann zwei Ziffern: 0 und 1.
+  FEHLER register 10 6 : Die Nummer ist zweistellig - 1 0 ist Speicher 10, nicht 01.
+  FALSCH STO 1 0
+  LOESUNG STO 0 1
+SCHRITT Lösche die Anzeige mit CLR. Die Anzeige zeigt 0 - der Speicher behält die 6.
+  ERWARTE anzeige "0"
+  ERWARTE register 01 6
+  TIPP CLR ist die orange Taste oben rechts.
+  FEHLER register 01 0 : 2nd CMs löscht die Speicher, nicht die Anzeige.
+  FALSCH 2nd STO
+  LOESUNG CLR
+SCHRITT Hole den Wert mit RCL 01 zurück.
+  ERWARTE wert 6
+  TIPP RCL, dann die zwei Ziffern des Speichers.
+  LOESUNG RCL 0 1
+SCHRITT Zähle 4 dazu, ohne den Speicher abzurufen: 4 SUM 01.
+  ERWARTE register 01 10
+  TIPP SUM addiert die Anzeige zum Speicher; die Anzeige selbst bleibt 4.
+  FEHLER register 01 4 : STO hat den Speicher überschrieben - SUM zählt dazu.
+  FALSCH 4 STO 0 1
+  LOESUNG 4 SUM 0 1
+SCHRITT Lösche alle Speicher auf einmal: 2nd CMs.
+  ERWARTE register 01 0
+  TIPP CMs steht über der Taste STO; vorher 2nd drücken.
+  LOESUNG 2nd STO
+
+TEIL Ueben
+AUFGABE Rechne (2 + 3) x 4 mit Klammern und lege das Ergebnis in Speicher 05.
+  ERWARTE register 05 20
+  TIPP Ohne Klammern rechnet der TI-59 erst 3 x 4 - Punkt vor Strich.
+  FEHLER register 05 14 : Ohne Klammern: 2 + 3 x 4 = 14.
+  FALSCH CLR 2 + 3 x 4 = STO 0 5
+  LOESUNG CLR ( 2 + 3 ) x 4 = STO 0 5
+
+TEIL Probe
+AUFGABE Speicher 01 enthält den Radius 3. Rechne die Kreisfläche pi r² und lege sie in Speicher 02.
+  VORBEREITUNG CLR 3 STO 0 1 CLR
+  ERWARTE register 02 28.27433388
+  TIPP pi steht über der Taste 3 (2nd 3), x² ist die Taste unter LRN rechts daneben.
+  FEHLER register 02 18.84955592 : Das ist 2 pi r, der Umfang - die Fläche braucht r².
+  FALSCH RCL 0 1 x 2 x 2nd 3 = STO 0 2
+  LOESUNG RCL 0 1 x2 x 2nd 3 = STO 0 2

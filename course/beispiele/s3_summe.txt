@@ -1,0 +1,8 @@
+LEKTION 303 Schleife mit Dsz
+SCHRITT Summe 1 bis n
+  LOESUNG CLR 2nd CE LRN 2nd SBR A STO 0 0 0 STO 0 1 2nd SBR C RCL 0 0 SUM 0 1 2nd 0 0 C RCL 0 1 R/S LRN
+  ERWARTE programm 0 76 11 42 0 0 42 1 76 13 43 0 44 1 97 0 13 43 1 91
+PROBE
+  1 0 A -> 55
+  1 0 0 A -> 5050
+  1 A -> 1

@@ -1,0 +1,10 @@
+LEKTION 222 Probe 2.2
+SCHRITT Fahrenheit mit Fix 0
+  LOESUNG CLR 2nd CE LRN - 3 2 = x 5 / 9 = 2nd ( 0 R/S LRN RST 9 8 . 6 R/S
+  ERWARTE anzeige "37."
+SCHRITT 2nd CP löscht das Programm
+  LOESUNG CLR 2nd CE
+  ERWARTE programm 0 0 0 0
+SCHRITT Mehrwertsteuer
+  LOESUNG LRN x 1 . 1 9 = 2nd ( 2 R/S LRN RST 1 0 0 R/S
+  ERWARTE anzeige "119.00"
