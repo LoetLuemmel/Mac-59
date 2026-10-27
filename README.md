@@ -9,8 +9,11 @@ real machine.
 Drucker PC-100C, Magnetkarten, Modul und einem Programmierkurs in 20 Lektionen. Oberfläche, Hilfen und Kurs sind
 deutsch.
 
-![Keying in a program: display and printer count the steps](docs/mac59-eintippen.png)
-![Listing and result on the PC-100C](docs/mac59-listing-ergebnis.png)
+![Mac-59: a Fibonacci program keyed in, listed and run on the PC-100C](docs/mac59-fibonacci.gif)
+
+*A short Fibonacci program keyed in (display and printer count the steps), listed and run — recorded in Basilisk II,
+partly sped up. Full resolution: [Mac-59-Fibonacci.mp4](https://github.com/LoetLuemmel/Mac-59/releases/download/v1.1/Mac-59-Fibonacci.mp4)
+(1920×1080, 51 s).*
 
 ## The ROM is not included
 
